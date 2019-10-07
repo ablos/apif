@@ -21,7 +21,7 @@ namespace APIF
 
         bool bmp2apif = true;
 
-        byte[][] pixelArray = new byte[0][];
+        Bitmap image = new Bitmap(0,0);
 
         private void UpdateProgressBar(int progress)
         {
@@ -45,7 +45,8 @@ namespace APIF
                     }
                     else
                     {
-                        PrepareBitmap(openFileDialog.FileName);
+                        image = new Bitmap(openFileDialog.FileName);
+                        imagepreview.Image = image;
                     }
                 }
             }
@@ -57,33 +58,16 @@ namespace APIF
         }
 
 
-        private void PrepareBitmap(string path)
-        {
-            Bitmap image = new Bitmap(path);
-            imagepreview.Image = image;
-
-            Rectangle rect = new Rectangle(0, 0, image.Width, image.Height);
-            BitmapData bmpData = image.LockBits(rect, ImageLockMode.ReadWrite, image.PixelFormat);
-            pixelArray = new byte[image.Height][];
-
-            IntPtr ptr = bmpData.Scan0;
-            for(int i = 0; i < image.Height; i++)
-            {
-                pixelArray[i] = new byte[Math.Abs(bmpData.Stride)];
-                System.Runtime.InteropServices.Marshal.Copy(ptr, pixelArray[i], 0, Math.Abs(bmpData.Stride));
-            }
-
-            image.UnlockBits(bmpData);
-        }
-
         private void ManageEncoding(string path)
         {
-
+            ApifEncoder encoder = new ApifEncoder();
+            encoder.Encode(image);
         }
 
         private void ManageDecoding(string path)
         {
-
+            ApifEncoder encoder = new ApifEncoder();
+            encoder.Decode(File.ReadAllBytes(path));
         }
     }
 }
