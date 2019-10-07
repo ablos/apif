@@ -28,66 +28,108 @@
         /// </summary>
         private void InitializeComponent()
         {
-            this.button1 = new System.Windows.Forms.Button();
-            this.button2 = new System.Windows.Forms.Button();
-            this.pictureBox1 = new System.Windows.Forms.PictureBox();
-            ((System.ComponentModel.ISupportInitialize)(this.pictureBox1)).BeginInit();
+            this.buttonOpen = new System.Windows.Forms.Button();
+            this.buttonSave = new System.Windows.Forms.Button();
+            this.imagepreview = new System.Windows.Forms.PictureBox();
+            this.conversionProgressBar = new System.Windows.Forms.ProgressBar();
+            this.compressionLabel = new System.Windows.Forms.Label();
+            this.conversionProgressLabel = new System.Windows.Forms.Label();
+            ((System.ComponentModel.ISupportInitialize)(this.imagepreview)).BeginInit();
             this.SuspendLayout();
             // 
-            // button1
+            // buttonOpen
             // 
-            this.button1.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
+            this.buttonOpen.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
-            this.button1.Location = new System.Drawing.Point(12, 12);
-            this.button1.Name = "button1";
-            this.button1.Size = new System.Drawing.Size(458, 23);
-            this.button1.TabIndex = 0;
-            this.button1.Text = "Open";
-            this.button1.UseVisualStyleBackColor = true;
+            this.buttonOpen.Location = new System.Drawing.Point(12, 12);
+            this.buttonOpen.Name = "buttonOpen";
+            this.buttonOpen.Size = new System.Drawing.Size(458, 23);
+            this.buttonOpen.TabIndex = 0;
+            this.buttonOpen.Text = "Open";
+            this.buttonOpen.UseVisualStyleBackColor = true;
+            this.buttonOpen.Click += new System.EventHandler(this.OpenFile);
             // 
-            // button2
+            // buttonSave
             // 
-            this.button2.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
+            this.buttonSave.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
-            this.button2.Location = new System.Drawing.Point(12, 41);
-            this.button2.Name = "button2";
-            this.button2.Size = new System.Drawing.Size(458, 23);
-            this.button2.TabIndex = 1;
-            this.button2.Text = "Save";
-            this.button2.UseVisualStyleBackColor = true;
+            this.buttonSave.Location = new System.Drawing.Point(12, 41);
+            this.buttonSave.Name = "buttonSave";
+            this.buttonSave.Size = new System.Drawing.Size(458, 23);
+            this.buttonSave.TabIndex = 1;
+            this.buttonSave.Text = "Save";
+            this.buttonSave.UseVisualStyleBackColor = true;
+            this.buttonSave.Click += new System.EventHandler(this.SaveFile);
             // 
-            // pictureBox1
+            // imagepreview
             // 
-            this.pictureBox1.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
+            this.imagepreview.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
             | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
-            this.pictureBox1.Location = new System.Drawing.Point(12, 70);
-            this.pictureBox1.Name = "pictureBox1";
-            this.pictureBox1.Size = new System.Drawing.Size(458, 371);
-            this.pictureBox1.TabIndex = 2;
-            this.pictureBox1.TabStop = false;
+            this.imagepreview.Location = new System.Drawing.Point(12, 99);
+            this.imagepreview.Name = "imagepreview";
+            this.imagepreview.Size = new System.Drawing.Size(458, 342);
+            this.imagepreview.SizeMode = System.Windows.Forms.PictureBoxSizeMode.Zoom;
+            this.imagepreview.TabIndex = 2;
+            this.imagepreview.TabStop = false;
+            // 
+            // conversionProgressBar
+            // 
+            this.conversionProgressBar.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.conversionProgressBar.Location = new System.Drawing.Point(12, 70);
+            this.conversionProgressBar.Name = "conversionProgressBar";
+            this.conversionProgressBar.Size = new System.Drawing.Size(266, 23);
+            this.conversionProgressBar.Step = 1;
+            this.conversionProgressBar.TabIndex = 3;
+            // 
+            // compressionLabel
+            // 
+            this.compressionLabel.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+            this.compressionLabel.Location = new System.Drawing.Point(328, 70);
+            this.compressionLabel.Name = "compressionLabel";
+            this.compressionLabel.Size = new System.Drawing.Size(142, 23);
+            this.compressionLabel.TabIndex = 4;
+            this.compressionLabel.Text = "compression = 0.000";
+            this.compressionLabel.TextAlign = System.Drawing.ContentAlignment.MiddleRight;
+            // 
+            // conversionProgressLabel
+            // 
+            this.conversionProgressLabel.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+            this.conversionProgressLabel.Location = new System.Drawing.Point(284, 70);
+            this.conversionProgressLabel.Name = "conversionProgressLabel";
+            this.conversionProgressLabel.Size = new System.Drawing.Size(45, 23);
+            this.conversionProgressLabel.TabIndex = 5;
+            this.conversionProgressLabel.Text = "00ms";
+            this.conversionProgressLabel.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
             // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 16F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(482, 453);
-            this.Controls.Add(this.pictureBox1);
-            this.Controls.Add(this.button2);
-            this.Controls.Add(this.button1);
-            this.MinimumSize = new System.Drawing.Size(170, 150);
+            this.Controls.Add(this.conversionProgressBar);
+            this.Controls.Add(this.conversionProgressLabel);
+            this.Controls.Add(this.imagepreview);
+            this.Controls.Add(this.buttonSave);
+            this.Controls.Add(this.buttonOpen);
+            this.Controls.Add(this.compressionLabel);
+            this.MinimumSize = new System.Drawing.Size(250, 250);
             this.Name = "Form1";
             this.Text = "APIF";
-            ((System.ComponentModel.ISupportInitialize)(this.pictureBox1)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.imagepreview)).EndInit();
             this.ResumeLayout(false);
 
         }
 
         #endregion
 
-        private System.Windows.Forms.Button button1;
-        private System.Windows.Forms.Button button2;
-        private System.Windows.Forms.PictureBox pictureBox1;
+        private System.Windows.Forms.Button buttonOpen;
+        private System.Windows.Forms.Button buttonSave;
+        private System.Windows.Forms.PictureBox imagepreview;
+        private System.Windows.Forms.ProgressBar conversionProgressBar;
+        private System.Windows.Forms.Label compressionLabel;
+        private System.Windows.Forms.Label conversionProgressLabel;
     }
 }
 
