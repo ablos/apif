@@ -19,9 +19,9 @@ namespace APIF
             InitializeComponent();
         }
 
-        bool bmp2apif = true;
+        bool decode = true;
 
-        Bitmap image = new Bitmap(0,0);
+        Bitmap image = null;
 
         private void UpdateProgressBar(int progress)
         {
@@ -31,43 +31,69 @@ namespace APIF
 
         private void OpenFile(object sender, EventArgs e)
         {
-            using (OpenFileDialog openFileDialog = new OpenFileDialog())
-            {
-                openFileDialog.Filter = "BMP Images|*.bmp|APIF Images|*.apif";
-                openFileDialog.FilterIndex = 0;
-                openFileDialog.RestoreDirectory = true;
+            OpenFileDialog openFileDialog = new OpenFileDialog();
+            openFileDialog.Filter = "BMP Images|*.bmp|APIF Images|*.apif";
+            openFileDialog.Title = "Open Image";
+            openFileDialog.FilterIndex = 0;
+            openFileDialog.RestoreDirectory = true;
 
-                if (openFileDialog.ShowDialog() == DialogResult.OK)
+            if (openFileDialog.ShowDialog() == DialogResult.OK)
+            {
+                decode = Path.GetExtension(openFileDialog.FileName).ToLower() == ".apif";
+                if (decode)
                 {
-                    if (Path.GetExtension(openFileDialog.FileName).ToLower() == ".apif")
-                    {
-                        ManageDecoding(openFileDialog.FileName);
-                    }
-                    else
-                    {
-                        image = new Bitmap(openFileDialog.FileName);
-                        imagepreview.Image = image;
-                    }
+                    ManageDecoding(openFileDialog.FileName);
+                }
+                else
+                {
+                    image = new Bitmap(openFileDialog.FileName);
+                    imagepreview.Image = image;
                 }
             }
         }
 
         private void SaveFile(object sender, EventArgs e)
         {
-
+            if (image != null)
+            {
+                if (decode)
+                {
+                    SaveFileDialog saveFileDialog = new SaveFileDialog();
+                    saveFileDialog.Filter = "BMP Image|*.bmp";
+                    saveFileDialog.Title = "Save BMP Image";
+                    saveFileDialog.RestoreDirectory = true;
+                    if (saveFileDialog.ShowDialog() == DialogResult.OK)
+                    {
+                        image.Save(saveFileDialog.FileName);
+                    }
+                }
+                else
+                {
+                    SaveFileDialog saveFileDialog = new SaveFileDialog();
+                    saveFileDialog.Filter = "APIF Image|*.apif";
+                    saveFileDialog.Title = "Save APIF Image";
+                    saveFileDialog.RestoreDirectory = true;
+                    if (saveFileDialog.ShowDialog() == DialogResult.OK)
+                    {
+                        ManageEncoding(saveFileDialog.FileName);
+                    }
+                }
+            }
         }
 
 
         private void ManageEncoding(string path)
         {
             ApifEncoder encoder = new ApifEncoder();
-            encoder.Encode(image);
+            byte[] file = encoder.Encode(image);
+            File.WriteAllBytes(path, file);
         }
 
         private void ManageDecoding(string path)
         {
             ApifEncoder encoder = new ApifEncoder();
-            encoder.Decode(File.ReadAllBytes(path));
+            image = encoder.Decode(File.ReadAllBytes(path));
+            imagepreview.Image = image;
         }
     }
 }
