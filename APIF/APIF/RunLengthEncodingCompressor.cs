@@ -9,8 +9,6 @@ namespace APIF
 {
     class RunLengthEncodingCompressor
     {
-        
-
         public RunLengthEncodingCompressor(byte[] input)
         {
 

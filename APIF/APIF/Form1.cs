@@ -92,13 +92,13 @@ namespace APIF
         {
             ApifEncoder encoder = new ApifEncoder();
             byte[] file = encoder.Encode(image);
-            File.WriteAllBytes(path, file);
+            FileManager.SaveFileBinary(path, file);
         }
 
         private void ManageDecoding(string path)
         {
             ApifEncoder encoder = new ApifEncoder();
-            image = encoder.Decode(File.ReadAllBytes(path));
+            image = encoder.Decode(FileManager.LoadFileBinary<byte[]>(path));
             imagepreview.Image = image;
         }
     }
