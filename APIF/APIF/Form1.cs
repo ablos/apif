@@ -32,7 +32,7 @@ namespace APIF
         private void OpenFile(object sender, EventArgs e)
         {
             OpenFileDialog openFileDialog = new OpenFileDialog();
-            openFileDialog.Filter = "BMP Images|*.bmp|APIF Images|*.apif";
+            openFileDialog.Filter = "Image files (*.jpg, *.jpeg, *.jpe, *.jfif, *.png, *.apif, *.webp) | *.jpg; *.jpeg; *.jpe; *.jfif; *.png; *.apif; *.webp";
             openFileDialog.Title = "Open Image";
             openFileDialog.FilterIndex = 0;
             openFileDialog.RestoreDirectory = true;
