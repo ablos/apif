@@ -23,7 +23,8 @@ namespace APIF
 
         Bitmap image = null;
         string filename = null;
-        string imageFilter = "Image files (*.jpg, *.jpeg, *.jpe, *.jfif, *.png, *.apif, *.webp, *.bmp) | *.jpg; *.jpeg; *.jpe; *.jfif; *.png; *.apif; *.webp; *.bmp";
+        string openImageFilter = "Image files (*.apif, *.bmp, *.png, *.jpg, *.jpeg, *.jpe, *.jfif, *.webp)| *.apif; *.bmp; *.png; *.jpg; *.jpeg; *.jpe; *.jfif; *.webp";
+        string saveImageFilter = "BMP Image (*.bmp)|*.bmp|PNG Image (*.png)|*.png|JPEG Image (*.jpg)|*.jpg|JFIF Image (*.jfif)|*.jfif|WEBP Image (*.webp)|*.webp";
 
         private void UpdateProgressBar(int progress)
         {
@@ -34,7 +35,7 @@ namespace APIF
         private void OpenFile(object sender, EventArgs e)
         {
             OpenFileDialog openFileDialog = new OpenFileDialog();
-            openFileDialog.Filter = imageFilter;
+            openFileDialog.Filter = openImageFilter;
             openFileDialog.Title = "Open Image";
             openFileDialog.FilterIndex = 0;
             openFileDialog.RestoreDirectory = true;
@@ -62,7 +63,7 @@ namespace APIF
                 if (decode)
                 {
                     SaveFileDialog saveFileDialog = new SaveFileDialog();
-                    saveFileDialog.Filter = imageFilter;
+                    saveFileDialog.Filter = saveImageFilter;
                     saveFileDialog.Title = "Save Image";
                     saveFileDialog.FileName = filename;
                     saveFileDialog.RestoreDirectory = true;
