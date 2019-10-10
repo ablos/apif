@@ -18,7 +18,7 @@ namespace APIF
     {
         public static void SaveFileBinary<T>(string path, T objectToSave, bool append = false)
         {
-            using (Stream stream = File.Open(path, FileMode.Open))
+            using (Stream stream = File.Open(path, FileMode.Create))
             {
                 BinaryFormatter formatter = new BinaryFormatter();
                 formatter.Serialize(stream, objectToSave);
