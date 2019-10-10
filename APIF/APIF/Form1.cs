@@ -22,6 +22,8 @@ namespace APIF
         bool decode = true;
 
         Bitmap image = null;
+        string filename = null;
+        string imageFilter = "Image files (*.jpg, *.jpeg, *.jpe, *.jfif, *.png, *.apif, *.webp, *.bmp) | *.jpg; *.jpeg; *.jpe; *.jfif; *.png; *.apif; *.webp; *.bmp";
 
         private void UpdateProgressBar(int progress)
         {
@@ -32,13 +34,14 @@ namespace APIF
         private void OpenFile(object sender, EventArgs e)
         {
             OpenFileDialog openFileDialog = new OpenFileDialog();
-            openFileDialog.Filter = "Image files (*.jpg, *.jpeg, *.jpe, *.jfif, *.png, *.apif, *.webp, *.bmp) | *.jpg; *.jpeg; *.jpe; *.jfif; *.png; *.apif; *.webp; *.bmp";
+            openFileDialog.Filter = imageFilter;
             openFileDialog.Title = "Open Image";
             openFileDialog.FilterIndex = 0;
             openFileDialog.RestoreDirectory = true;
 
             if (openFileDialog.ShowDialog() == DialogResult.OK)
             {
+                filename = Path.GetFileNameWithoutExtension(openFileDialog.FileName);
                 decode = Path.GetExtension(openFileDialog.FileName).ToLower() == ".apif";
                 if (decode)
                 {
@@ -59,10 +62,12 @@ namespace APIF
                 if (decode)
                 {
                     SaveFileDialog saveFileDialog = new SaveFileDialog();
-                    saveFileDialog.Filter = "BMP Image|*.bmp";
-                    saveFileDialog.Title = "Save BMP Image";
+                    saveFileDialog.Filter = imageFilter;
+                    saveFileDialog.Title = "Save Image";
+                    saveFileDialog.FileName = filename;
                     saveFileDialog.RestoreDirectory = true;
-                    if (saveFileDialog.ShowDialog() == DialogResult.OK)
+                    DialogResult result = saveFileDialog.ShowDialog();
+                    if (result == DialogResult.OK)
                     {
                         image.Save(saveFileDialog.FileName);
                     }
@@ -72,6 +77,7 @@ namespace APIF
                     SaveFileDialog saveFileDialog = new SaveFileDialog();
                     saveFileDialog.Filter = "APIF Image|*.apif";
                     saveFileDialog.Title = "Save APIF Image";
+                    saveFileDialog.FileName = filename;
                     saveFileDialog.RestoreDirectory = true;
                     if (saveFileDialog.ShowDialog() == DialogResult.OK)
                     {
