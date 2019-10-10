@@ -13,7 +13,7 @@ namespace APIF
     {
         class AccessibleBitmap
         {
-            private byte[] byteArray;
+            public byte[] byteArray;
             public int height;
             public int width;
             public int pixelBytes;
@@ -65,7 +65,7 @@ namespace APIF
                 byteArray = new byte[height * width * pixelBytes];
 
                 IntPtr ptr = bmpData.Scan0;
-                System.Runtime.InteropServices.Marshal.Copy(ptr, byteArray, 0, byteArray.Length);
+                Marshal.Copy(ptr, byteArray, 0, byteArray.Length);
 
                 bmpFixed.UnlockBits(bmpData);
             }
@@ -125,6 +125,7 @@ namespace APIF
                     {
                         output[i] = byteArray[y * width * pixelBytes + x + i];
                     }
+                    Console.WriteLine(output[0].ToString() + output[1].ToString() + output[2].ToString());
                     return output;
                 }
                 else
@@ -156,6 +157,7 @@ namespace APIF
             byteArray[1] = (byte)aBitmap.width;
             byteArray[2] = (byte)aBitmap.height;
 
+            /*Console.WriteLine(aBitmap.pixelBytes);
             for (int i = 0; i < aBitmap.height; i++)
             {
                 for (int j = 0; j < aBitmap.width; j++)
@@ -163,9 +165,14 @@ namespace APIF
                     byte[] pixel = aBitmap.GetPixel(j, i);
                     for (int k = 0; k < pixel.Length; k++)
                     {
-                        byteArray[3 + i * aBitmap.width * 3 + j * 3 + k] = pixel[k];
+                        byteArray[3 + i * aBitmap.width * aBitmap.pixelBytes + j * aBitmap.pixelBytes + k] = pixel[k];
                     }
                 }
+            }*/
+
+            for (int i = 3; i < byteArray.Length; i++)
+            {
+                byteArray[i] = aBitmap.byteArray[i-3];
             }
 
             return byteArray;
@@ -175,7 +182,7 @@ namespace APIF
         {
             AccessibleBitmap aBitmap = new AccessibleBitmap(bytes[2], bytes[1], bytes[0]);
 
-            int x = 0;
+            /*int x = 0;
             int y = 0;
             for (int i = 3; i < bytes.Length; i = i + aBitmap.pixelBytes)
             {
@@ -192,6 +199,11 @@ namespace APIF
                     x = 0;
                     y++;
                 }
+            }*/
+
+            for (int i = 0; i < aBitmap.byteArray.Length; i++)
+            {
+                aBitmap.byteArray[i] = bytes[i+3];
             }
 
             return aBitmap.GetBitmap();
