@@ -106,7 +106,7 @@ namespace APIF
                 {
                     for(int i = 0; i < pixelData.Length; i++)
                     {
-                        byteArray[y * width * pixelBytes + x + i] = pixelData[i];
+                        byteArray[y * width * pixelBytes + x * pixelBytes + i] = pixelData[i];
                     }
                 }
                 else
@@ -119,13 +119,11 @@ namespace APIF
             {
                 if (x < width && y < height)
                 {
-                    int arraySize = pixelBytes;
-                    byte[] output = new byte[arraySize];
-                    for (int i = 0; i < arraySize; i++)
+                    byte[] output = new byte[pixelBytes];
+                    for (int i = 0; i < pixelBytes; i++)
                     {
-                        output[i] = byteArray[y * width * pixelBytes + x + i];
+                        output[i] = byteArray[y * width * pixelBytes + x * pixelBytes + i];
                     }
-                    Console.WriteLine(output[0].ToString() + output[1].ToString() + output[2].ToString());
                     return output;
                 }
                 else
@@ -184,7 +182,7 @@ namespace APIF
 
             /*int x = 0;
             int y = 0;
-            for (int i = 3; i < bytes.Length; i = i + aBitmap.pixelBytes)
+            for (int i = 0; i < bytes.Length - 3; i = i + aBitmap.pixelBytes)
             {
                 byte[] pixel = new byte[aBitmap.pixelBytes];
                 for (int j = 0; j < pixel.Length; j++)
@@ -194,7 +192,7 @@ namespace APIF
                 aBitmap.SetPixel(x, y, pixel);
 
                 x++;
-                if (x >= aBitmap.width)
+                if (x == aBitmap.width)
                 {
                     x = 0;
                     y++;
@@ -205,6 +203,9 @@ namespace APIF
             {
                 aBitmap.byteArray[i] = bytes[i+3];
             }
+
+            byte[] tmppixel = aBitmap.GetPixel(1,1);
+            Console.WriteLine(tmppixel[0].ToString() + tmppixel[1].ToString() + tmppixel[2].ToString());
 
             return aBitmap.GetBitmap();
         }
