@@ -9,7 +9,7 @@ namespace APIF
 {
     class RunLengthEncodingCompressor
     {
-        public RunLengthEncodingCompressor(byte[] input)
+        public RunLengthEncodingCompressor(ApifEncoder.AccessibleBitmap input)
         {
 
         }

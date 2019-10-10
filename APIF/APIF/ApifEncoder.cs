@@ -11,9 +11,9 @@ namespace APIF
 {
     class ApifEncoder
     {
-        class AccessibleBitmap
+        public class AccessibleBitmap
         {
-            public byte[] byteArray;
+            private byte[] byteArray;
             public int height;
             public int width;
             public int pixelBytes;
