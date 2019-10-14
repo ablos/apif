@@ -79,16 +79,16 @@
             | System.Windows.Forms.AnchorStyles.Right)));
             this.conversionProgressBar.Location = new System.Drawing.Point(12, 70);
             this.conversionProgressBar.Name = "conversionProgressBar";
-            this.conversionProgressBar.Size = new System.Drawing.Size(266, 23);
+            this.conversionProgressBar.Size = new System.Drawing.Size(254, 23);
             this.conversionProgressBar.Step = 1;
             this.conversionProgressBar.TabIndex = 3;
             // 
             // compressionLabel
             // 
             this.compressionLabel.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.compressionLabel.Location = new System.Drawing.Point(328, 70);
+            this.compressionLabel.Location = new System.Drawing.Point(327, 70);
             this.compressionLabel.Name = "compressionLabel";
-            this.compressionLabel.Size = new System.Drawing.Size(142, 23);
+            this.compressionLabel.Size = new System.Drawing.Size(143, 23);
             this.compressionLabel.TabIndex = 4;
             this.compressionLabel.Text = "compression = 0.000";
             this.compressionLabel.TextAlign = System.Drawing.ContentAlignment.MiddleRight;
@@ -96,11 +96,11 @@
             // conversionProgressLabel
             // 
             this.conversionProgressLabel.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.conversionProgressLabel.Location = new System.Drawing.Point(284, 70);
+            this.conversionProgressLabel.Location = new System.Drawing.Point(272, 70);
             this.conversionProgressLabel.Name = "conversionProgressLabel";
-            this.conversionProgressLabel.Size = new System.Drawing.Size(45, 23);
+            this.conversionProgressLabel.Size = new System.Drawing.Size(58, 23);
             this.conversionProgressLabel.TabIndex = 5;
-            this.conversionProgressLabel.Text = "00ms";
+            this.conversionProgressLabel.Text = "00,0ms";
             this.conversionProgressLabel.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
             // 
             // Form1

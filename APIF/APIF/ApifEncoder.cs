@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Drawing.Imaging;
@@ -11,6 +12,34 @@ namespace APIF
 {
     class ApifEncoder
     {
+        private TimeSpan encodingStart = TimeSpan.FromMilliseconds(1);
+        private TimeSpan encodingStop = TimeSpan.FromMilliseconds(0);
+        public TimeSpan GetEncodingTime()
+        {
+            if (encodingStart.TotalMilliseconds < encodingStop.TotalMilliseconds)
+            {
+                return encodingStop.Subtract(encodingStart);
+            }
+            else
+            {
+                return TimeSpan.Zero;
+            }
+        }
+
+        private double compressionRate = 0;
+        public double GetCompressionRate()
+        {
+            if (encodingStart.TotalMilliseconds < encodingStop.TotalMilliseconds)
+            {
+                return compressionRate;
+            }
+            else
+            {
+                return -1;
+            }
+        }
+
+
         public class AccessibleBitmap
         {
             private byte[] byteArray;
@@ -146,8 +175,10 @@ namespace APIF
             }
         }
 
+
         public byte[] Encode(Bitmap bitmap)
         {
+            encodingStart = DateTime.Now.TimeOfDay;
             AccessibleBitmap aBitmap = new AccessibleBitmap(bitmap);
 
             byte[] byteArray = new byte[aBitmap.pixelBytes * aBitmap.height * aBitmap.width + 5];
@@ -157,7 +188,6 @@ namespace APIF
             byteArray[3] = (byte)(aBitmap.height >> 8);
             byteArray[4] = (byte)aBitmap.height;
 
-            Console.WriteLine(aBitmap.pixelBytes);
             for (int i = 0; i < aBitmap.height; i++)
             {
                 for (int j = 0; j < aBitmap.width; j++)
@@ -170,11 +200,14 @@ namespace APIF
                 }
             }
 
+            encodingStop = DateTime.Now.TimeOfDay;
+            compressionRate = (double)byteArray.Length / (aBitmap.width * aBitmap.height);
             return byteArray;
         }
 
         public Bitmap Decode(byte[] bytes)
         {
+            encodingStart = DateTime.Now.TimeOfDay;
             AccessibleBitmap aBitmap = new AccessibleBitmap(bytes[3] * 256 + bytes[4], bytes[1] * 256 + bytes[2], bytes[0]);
 
             int x = 0;
@@ -196,6 +229,8 @@ namespace APIF
                 }
             }
 
+            encodingStop = DateTime.Now.TimeOfDay;
+            compressionRate = (double)bytes.Length / (aBitmap.width * aBitmap.height);
             return aBitmap.GetBitmap();
         }
     }

@@ -93,14 +93,20 @@ namespace APIF
         {
             ApifEncoder encoder = new ApifEncoder();
             byte[] file = encoder.Encode(image);
-            FileManager.SaveFileBinary(path, file);
+            File.WriteAllBytes(path, file);
+
+            conversionProgressLabel.Text = encoder.GetEncodingTime().TotalMilliseconds.ToString("F1") + "ms";
+            compressionLabel.Text = "compression = " + encoder.GetCompressionRate().ToString("F3");
         }
 
         private void ManageDecoding(string path)
         {
             ApifEncoder encoder = new ApifEncoder();
-            image = encoder.Decode(FileManager.LoadFileBinary<byte[]>(path));
+            image = encoder.Decode(File.ReadAllBytes(path));
             imagepreview.Image = image;
+
+            conversionProgressLabel.Text = encoder.GetEncodingTime().TotalMilliseconds.ToString("F1") + "ms";
+            compressionLabel.Text = "compression = " + encoder.GetCompressionRate().ToString("F3");
         }
     }
 }
