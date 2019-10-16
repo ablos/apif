@@ -99,7 +99,7 @@ namespace APIF
                 bmpFixed.UnlockBits(bmpData);
             }
 
-            public AccessibleBitmap(int bmpHeight, int bmpWidth, int bmpPixelFormat)
+            public AccessibleBitmap(int bmpWidth, int bmpHeight, int bmpPixelFormat)
             {
                     switch (bmpPixelFormat)
                     {
@@ -161,6 +161,35 @@ namespace APIF
                 }
             }
 
+            public void SetPixelBit(int x, int y, int layer, bool bit)
+            {
+                if (x < width && y < height && layer < pixelBytes * 8)
+                {
+                    int bitIndex = (y * width + x) * pixelBytes * 8 + layer;
+                    BitArray bArray = new BitArray(byteArray);
+                    bArray[bitIndex] = bit;
+                    bArray.CopyTo(byteArray, 0);
+                }
+                else
+                {
+                    throw new FormatException("invalid input dimensions");
+                }
+            }
+
+            public bool GetPixelBit(int x, int y, int layer)
+            {
+                if (x < width && y < height)
+                {
+                    int bitIndex = (y * width + x) * pixelBytes * 8 + layer;
+                    BitArray bArray = new BitArray(byteArray);
+                    return bArray[bitIndex];
+                }
+                else
+                {
+                    throw new FormatException("invalid input dimensions");
+                }
+            }
+
             public Bitmap GetBitmap()
             {
                 Bitmap bitmap = new Bitmap(width, height, pixelFormat);
@@ -175,63 +204,62 @@ namespace APIF
             }
         }
 
+        public class BitWrapper
+        {
+            bool read;
+
+            public BitWrapper()
+            {
+                read = false;
+            }
+
+            //public BitWrapper()
+            //{
+
+            //}
+        }
+
 
         public byte[] Encode(Bitmap bitmap)
         {
             encodingStart = DateTime.Now.TimeOfDay;
+
             AccessibleBitmap aBitmap = new AccessibleBitmap(bitmap);
 
-            byte[] byteArray = new byte[aBitmap.pixelBytes * aBitmap.height * aBitmap.width + 5];
-            byteArray[0] = (byte)aBitmap.pixelBytes;
-            byteArray[1] = (byte)(aBitmap.width >> 8);
-            byteArray[2] = (byte)aBitmap.width;
-            byteArray[3] = (byte)(aBitmap.height >> 8);
-            byteArray[4] = (byte)aBitmap.height;
+            byte[] header = new byte[5];
+            header[0] = (byte)aBitmap.pixelBytes;
+            header[1] = (byte)(aBitmap.width >> 8);
+            header[2] = (byte)aBitmap.width;
+            header[3] = (byte)(aBitmap.height >> 8);
+            header[4] = (byte)aBitmap.height;
 
-            for (int i = 0; i < aBitmap.height; i++)
-            {
-                for (int j = 0; j < aBitmap.width; j++)
-                {
-                    byte[] pixel = aBitmap.GetPixel(j, i);
-                    for (int k = 0; k < pixel.Length; k++)
-                    {
-                        byteArray[5 + i * aBitmap.width * aBitmap.pixelBytes + j * aBitmap.pixelBytes + k] = pixel[k];
-                    }
-                }
-            }
+            byte[] image = UncompressedBitmapCompressor.Compress(aBitmap);
+            byte[] fileBytes = new byte[header.Length + image.Length];
+            Array.Copy(header, fileBytes, header.Length);
+            Array.Copy(image, 0, fileBytes, header.Length, image.Length);
 
             encodingStop = DateTime.Now.TimeOfDay;
-            compressionRate = (double)byteArray.Length / (aBitmap.width * aBitmap.height);
-            return byteArray;
+            compressionRate = (double)fileBytes.Length / (aBitmap.width * aBitmap.height);
+            return fileBytes;
         }
 
         public Bitmap Decode(byte[] bytes)
         {
             encodingStart = DateTime.Now.TimeOfDay;
-            AccessibleBitmap aBitmap = new AccessibleBitmap(bytes[3] * 256 + bytes[4], bytes[1] * 256 + bytes[2], bytes[0]);
 
-            int x = 0;
-            int y = 0;
-            for (int i = 5; i < bytes.Length; i = i + aBitmap.pixelBytes)
-            {
-                byte[] pixel = new byte[aBitmap.pixelBytes];
-                for (int j = 0; j < pixel.Length; j++)
-                {
-                    pixel[j] = bytes[i + j];
-                }
-                aBitmap.SetPixel(x, y, pixel);
+            int pixelBytes = bytes[0];
+            int width = bytes[3] * 256 + bytes[4];
+            int height = bytes[1] * 256 + bytes[2];
+            AccessibleBitmap emptyBitmap = new AccessibleBitmap(width, height, pixelBytes);
 
-                x++;
-                if (x == aBitmap.width)
-                {
-                    x = 0;
-                    y++;
-                }
-            }
+            byte[] image = new byte[bytes.Length - 5];
+            Array.Copy(bytes, 5, image, 0, image.Length);
+
+            AccessibleBitmap outputBitmap = UncompressedBitmapCompressor.Decompress(image, emptyBitmap);
 
             encodingStop = DateTime.Now.TimeOfDay;
-            compressionRate = (double)bytes.Length / (aBitmap.width * aBitmap.height);
-            return aBitmap.GetBitmap();
+            compressionRate = (double)bytes.Length / (outputBitmap.width * outputBitmap.height);
+            return outputBitmap.GetBitmap();
         }
     }
 }
