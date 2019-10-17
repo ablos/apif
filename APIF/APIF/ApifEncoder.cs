@@ -248,14 +248,13 @@ namespace APIF
             encodingStart = DateTime.Now.TimeOfDay;
 
             int pixelBytes = bytes[0];
-            int width = bytes[3] * 256 + bytes[4];
-            int height = bytes[1] * 256 + bytes[2];
-            AccessibleBitmap emptyBitmap = new AccessibleBitmap(width, height, pixelBytes);
+            int width = bytes[1] * 256 + bytes[2];
+            int height = bytes[3] * 256 + bytes[4];
 
             byte[] image = new byte[bytes.Length - 5];
             Array.Copy(bytes, 5, image, 0, image.Length);
 
-            AccessibleBitmap outputBitmap = UncompressedBitmapCompressor.Decompress(image, emptyBitmap);
+            AccessibleBitmap outputBitmap = UncompressedBitmapCompressor.Decompress(image, width, height, pixelBytes);
 
             encodingStop = DateTime.Now.TimeOfDay;
             compressionRate = (double)bytes.Length / (outputBitmap.width * outputBitmap.height);

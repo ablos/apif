@@ -28,29 +28,30 @@ namespace APIF
             return byteArray;
         }
 
-        public static AccessibleBitmap Decompress(byte[] source, AccessibleBitmap templateBitmap)
+        public static AccessibleBitmap Decompress(byte[] source, int width, int height, int pixelBytes)
         {
+            AccessibleBitmap aBitmap = new AccessibleBitmap(width, height, pixelBytes);
 
             int x = 0;
             int y = 0;
-            for (int i = 0; i < source.Length; i = i + templateBitmap.pixelBytes)
+            for (int i = 0; i < source.Length; i = i + aBitmap.pixelBytes)
             {
-                byte[] pixel = new byte[templateBitmap.pixelBytes];
+                byte[] pixel = new byte[aBitmap.pixelBytes];
                 for (int j = 0; j < pixel.Length; j++)
                 {
                     pixel[j] = source[i + j];
                 }
-                templateBitmap.SetPixel(x, y, pixel);
+                aBitmap.SetPixel(x, y, pixel);
 
                 x++;
-                if (x == templateBitmap.width)
+                if (x == aBitmap.width)
                 {
                     x = 0;
                     y++;
                 }
             }
 
-            return templateBitmap;
+            return aBitmap;
         }
 
     }
