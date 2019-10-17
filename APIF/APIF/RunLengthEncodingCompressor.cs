@@ -4,30 +4,23 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Drawing;
+using static APIF.ApifEncoder;
 
 namespace APIF
 {
     class RunLengthEncodingCompressor
     {
-        ApifEncoder.AccessibleBitmap bmp;                       // Variable for storing the bitmap
-
-        //Constructor to assign bitmap on creation of the compressor
-        public RunLengthEncodingCompressor(ApifEncoder.AccessibleBitmap input)
-        {
-            bmp = input;   
-        }
-
         // This function will compress te bitmap and return a new AccessibleBitmap
-        public ApifEncoder.AccessibleBitmap RLECompress()
+        public static byte[] Compress(AccessibleBitmap source)
         {
-            Color[,] colors = new Color[bmp.width, bmp.height];         // 2D color array for setting the bytes to colors for easy comparison
+            Color[,] colors = new Color[source.width, source.height];         // 2D color array for setting the bytes to colors for easy comparison
 
             // Iterate through all the pixels of the bitmap, get their ARGB values and store them as colors in the 2D color array
-            for (int y = 0; y < bmp.height; y++)
+            for (int y = 0; y < source.height; y++)
             {
-                for (int x = 0; x < bmp.width; x++)
+                for (int x = 0; x < source.width; x++)
                 {
-                    byte[] pixel = bmp.GetPixel(x, y);
+                    byte[] pixel = source.GetPixel(x, y);
                     Color c;
                     if (pixel.Length % 3 == 0)
                     {
@@ -53,6 +46,12 @@ namespace APIF
             // Compare per row the pixels next to eachother and compress
             // Turn all the color values back to byte arrays and save them in a AccessibleBitmap
 
+            return null;
+        }
+
+        public static AccessibleBitmap Decompress(byte[] source, int width, int height, int pixelBytes)
+        {
+            //decompress & return aBitmap
             return null;
         }
     }
