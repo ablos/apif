@@ -204,19 +204,127 @@ namespace APIF
             }
         }
 
-        public class BitWrapper
+        public class BitStreamFIFO
         {
-            bool read;
+            List<bool> allData;
+            public int Length { get { return allData.Count; } }
 
-            public BitWrapper()
+            public BitStreamFIFO()
             {
-                read = false;
+                allData = new List<bool>();
             }
 
-            //public BitWrapper()
-            //{
+            public BitStreamFIFO(byte[] byteArray)
+            {
+                bool[] boolArray = new bool[byteArray.Length * 8];
+                new BitArray(byteArray).CopyTo(boolArray, 0);
+                allData = new List<bool>(boolArray);
+            }
 
-            //}
+            public BitStreamFIFO(bool[] boolArray)
+            {
+                allData = new List<bool>(boolArray);
+            }
+
+
+            public void Write(bool[] boolArray)
+            {
+                allData.AddRange(boolArray);
+            }
+
+            public void Write(bool inputBool)
+            {
+                allData.Add(inputBool);
+            }
+
+            public void Write(int number, int bitCount)
+            {
+                Write(IntToBoolArray(number, bitCount));
+            }
+
+            public void Write(byte input)
+            {
+                Write(ByteToBoolArray(input));
+            }
+
+            public void Write(byte[] input)
+            {
+                Write(ByteArrayToBoolArray(input));
+            }
+
+
+            public bool[] ReadBoolArray(int length)
+            {
+                bool[] output = allData.GetRange(0, length).ToArray();
+                allData.RemoveRange(0, length);
+                return output;
+            }
+
+            public bool ReadBool()
+            {
+                bool output = allData[0];
+                allData.RemoveAt(0);
+                return output;
+            }
+
+            public int ReadInt(int length)
+            {
+                return BoolArrayToInt(ReadBoolArray(length));
+            }
+
+            public byte ReadByte()
+            {
+                return BoolArrayToByte(ReadBoolArray(8));
+            }
+
+            public byte[] ReadByteArray(int length, bool lengthInBits = false)
+            {
+                return BoolArrayToByteArray(ReadBoolArray(lengthInBits?length:(length*8)));
+            }
+
+
+            public bool[] IntToBoolArray(int number, int bitCount)
+            {
+                BitArray tempBits = new BitArray(new int[] { number });
+                tempBits.Length = bitCount;
+                bool[] output = new bool[bitCount];
+                tempBits.CopyTo(output, 0);
+                return output;
+            }
+
+            public bool[] ByteToBoolArray(byte input)
+            {
+                return IntToBoolArray(input, 8);
+            }
+
+            public bool[] ByteArrayToBoolArray(byte[] input)
+            {
+                BitArray tempBits = new BitArray(input);
+                bool[] output = new bool[tempBits.Count];
+                tempBits.CopyTo(output, 0);
+                return output;
+            }
+
+            public int BoolArrayToInt(bool[] source)
+            {
+                BitArray tempBits = new BitArray(source);
+                int[] tempArray = new int[1];
+                tempBits.CopyTo(tempArray, 0);
+                return tempArray[0];
+            }
+
+            public byte[] BoolArrayToByteArray(bool[] source)
+            {
+                BitArray tempBits = new BitArray(source);
+                byte[] output = new byte[(source.Length + 7) / 8];
+                tempBits.CopyTo(output, 0);
+                return output;
+            }
+
+            public byte BoolArrayToByte(bool[] source)
+            {
+                return (byte)BoolArrayToInt(source);
+            }
         }
 
 
