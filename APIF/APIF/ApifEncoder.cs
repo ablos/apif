@@ -50,6 +50,11 @@ namespace APIF
 
             public AccessibleBitmap(Bitmap bitmap)
             {
+                if (bitmap == null)
+                {
+                    throw new ArgumentNullException("Input bitmap may not be null");
+                }
+
                 switch (bitmap.PixelFormat)
                 {
                     case PixelFormat.Format24bppRgb:
@@ -81,7 +86,7 @@ namespace APIF
                         break;
 
                     default:
-                        throw new FormatException("invalid pixelformat");
+                        throw new ArgumentException("Invalid pixelformat");
                 }
 
                 Rectangle size = new Rectangle(0, 0, bitmap.Width, bitmap.Height);
@@ -101,32 +106,37 @@ namespace APIF
 
             public AccessibleBitmap(int bmpWidth, int bmpHeight, int bmpPixelFormat)
             {
-                    switch (bmpPixelFormat)
-                    {
-                        case 3:
-                            pixelFormat = PixelFormat.Format24bppRgb;
-                            break;
+                switch (bmpPixelFormat)
+                {
+                    case 3:
+                        pixelFormat = PixelFormat.Format24bppRgb;
+                        break;
 
-                        case 4:
-                            pixelFormat = PixelFormat.Format32bppArgb;
-                            break;
+                    case 4:
+                        pixelFormat = PixelFormat.Format32bppArgb;
+                        break;
 
-                        case 6:
-                            pixelFormat = PixelFormat.Format48bppRgb;
-                            break;
+                    case 6:
+                        pixelFormat = PixelFormat.Format48bppRgb;
+                        break;
 
-                        case 8:
-                            pixelFormat = PixelFormat.Format64bppArgb;
-                            break;
+                    case 8:
+                        pixelFormat = PixelFormat.Format64bppArgb;
+                        break;
 
-                        default:
-                            throw new FormatException("invalid pixelformat");
-                    }
+                    default:
+                        throw new ArgumentException("Invalid pixelformat");
+                }
 
-                    byteArray = new byte[bmpHeight * bmpWidth * bmpPixelFormat];
-                    height = bmpHeight;
-                    width = bmpWidth;
-                    pixelBytes = bmpPixelFormat;
+                if(bmpWidth < 1 || bmpHeight < 1)
+                {
+                    throw new ArgumentException("AccessibleBitmap dimensions must be 1 or greater");
+                }
+
+                byteArray = new byte[bmpHeight * bmpWidth * bmpPixelFormat];
+                height = bmpHeight;
+                width = bmpWidth;
+                pixelBytes = bmpPixelFormat;
             }
 
             public void SetPixel(int x, int y, byte[] pixelData)
@@ -140,7 +150,7 @@ namespace APIF
                 }
                 else
                 {
-                    throw new FormatException("invalid input dimensions");
+                    throw new ArgumentException("Invalid input dimensions");
                 }
             }
 
@@ -157,7 +167,7 @@ namespace APIF
                 }
                 else
                 {
-                    throw new FormatException("invalid input dimensions");
+                    throw new ArgumentException("Invalid input dimensions");
                 }
             }
 
@@ -172,7 +182,7 @@ namespace APIF
                 }
                 else
                 {
-                    throw new FormatException("invalid input dimensions");
+                    throw new ArgumentException("Invalid input dimensions");
                 }
             }
 
@@ -186,7 +196,7 @@ namespace APIF
                 }
                 else
                 {
-                    throw new FormatException("invalid input dimensions");
+                    throw new ArgumentException("Invalid input dimensions");
                 }
             }
 
@@ -216,6 +226,8 @@ namespace APIF
 
             public BitStreamFIFO(byte[] byteArray)
             {
+                BlockNull(byteArray);
+
                 bool[] boolArray = new bool[byteArray.Length * 8];
                 new BitArray(byteArray).CopyTo(boolArray, 0);
                 allData = new List<bool>(boolArray);
@@ -223,17 +235,20 @@ namespace APIF
 
             public BitStreamFIFO(bool[] boolArray)
             {
+                BlockNull(boolArray);
                 allData = new List<bool>(boolArray);
             }
 
 
             public void Write(bool[] boolArray)
             {
+                BlockNull(boolArray);
                 allData.AddRange(boolArray);
             }
 
             public void Write(bool inputBool)
             {
+                BlockNull(inputBool);
                 allData.Add(inputBool);
             }
 
@@ -255,6 +270,9 @@ namespace APIF
 
             public bool[] ReadBoolArray(int length)
             {
+                BlockNull(length);
+                if (allData.Count < length) { throw new ArgumentOutOfRangeException("'length' is greater than BitStreamFIFO length"); }
+
                 bool[] output = allData.GetRange(0, length).ToArray();
                 allData.RemoveRange(0, length);
                 return output;
@@ -262,6 +280,8 @@ namespace APIF
 
             public bool ReadBool()
             {
+                if (allData.Count < 1) { throw new Exception("Cannot read from empty BitStreamFIFO"); }
+
                 bool output = allData[0];
                 allData.RemoveAt(0);
                 return output;
@@ -283,8 +303,12 @@ namespace APIF
             }
 
 
+
             public bool[] IntToBoolArray(int number, int bitCount)
             {
+                BlockNull(number);
+                BlockNull(bitCount);
+
                 BitArray tempBits = new BitArray(new int[] { number });
                 tempBits.Length = bitCount;
                 bool[] output = new bool[bitCount];
@@ -299,14 +323,19 @@ namespace APIF
 
             public bool[] ByteArrayToBoolArray(byte[] input)
             {
+                BlockNull(input);
+
                 BitArray tempBits = new BitArray(input);
                 bool[] output = new bool[tempBits.Count];
                 tempBits.CopyTo(output, 0);
                 return output;
             }
 
+
             public int BoolArrayToInt(bool[] source)
             {
+                BlockNull(source);
+
                 BitArray tempBits = new BitArray(source);
                 int[] tempArray = new int[1];
                 tempBits.CopyTo(tempArray, 0);
@@ -315,6 +344,8 @@ namespace APIF
 
             public byte[] BoolArrayToByteArray(bool[] source)
             {
+                BlockNull(source);
+
                 BitArray tempBits = new BitArray(source);
                 byte[] output = new byte[(source.Length + 7) / 8];
                 tempBits.CopyTo(output, 0);
@@ -324,6 +355,16 @@ namespace APIF
             public byte BoolArrayToByte(bool[] source)
             {
                 return (byte)BoolArrayToInt(source);
+            }
+
+
+
+            private void BlockNull(object var)
+            {
+                if(var == null)
+                {
+                    throw new ArgumentNullException("Input var may not be null");
+                }
             }
         }
 
