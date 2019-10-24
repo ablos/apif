@@ -12,6 +12,8 @@ namespace APIF
 {
     class ApifEncoder
     {
+        private static int version = 1;
+
         private TimeSpan encodingStart = TimeSpan.FromMilliseconds(1);
         private TimeSpan encodingStop = TimeSpan.FromMilliseconds(0);
         public TimeSpan GetEncodingTime()
@@ -96,10 +98,13 @@ namespace APIF
                 height = bmpData.Height;
                 width = bmpData.Width;
                 pixelBytes = Image.GetPixelFormatSize(pixelFormat) / 8;
-                byteArray = new byte[height * width * pixelBytes];
+                byteArray = new byte[height * bmpData.Stride];
 
-                IntPtr ptr = bmpData.Scan0;
-                Marshal.Copy(ptr, byteArray, 0, byteArray.Length);
+                for (int i = 0; i < height; i++)
+                {
+                    IntPtr ptr = IntPtr.Add(bmpData.Scan0, i * bmpData.Stride);
+                    Marshal.Copy(ptr, byteArray, i * width * pixelBytes, width * pixelBytes);
+                }
 
                 bmpFixed.UnlockBits(bmpData);
             }
@@ -139,6 +144,7 @@ namespace APIF
                 pixelBytes = bmpPixelFormat;
             }
 
+
             public void SetPixel(int x, int y, byte[] pixelData)
             {
                 if (x < width && y < height && pixelData.Length == pixelBytes)
@@ -159,10 +165,7 @@ namespace APIF
                 if (x < width && y < height)
                 {
                     byte[] output = new byte[pixelBytes];
-                    for (int i = 0; i < pixelBytes; i++)
-                    {
-                        output[i] = byteArray[y * width * pixelBytes + x * pixelBytes + i];
-                    }
+                    Array.Copy(byteArray, y * width * pixelBytes + x * pixelBytes, output, 0, pixelBytes);
                     return output;
                 }
                 else
@@ -176,9 +179,9 @@ namespace APIF
                 if (x < width && y < height && layer < pixelBytes * 8)
                 {
                     int bitIndex = (y * width + x) * pixelBytes * 8 + layer;
-                    BitArray bArray = new BitArray(byteArray);
-                    bArray[bitIndex] = bit;
-                    bArray.CopyTo(byteArray, 0);
+                    int byteIndex = bitIndex / 8;
+                    byte mask = (byte)(1 << bitIndex % 8);
+                    byteArray[byteIndex] = (byte)(bit ? (byteArray[byteIndex] | mask) : (byteArray[byteIndex] & ~mask));
                 }
                 else
                 {
@@ -191,8 +194,9 @@ namespace APIF
                 if (x < width && y < height)
                 {
                     int bitIndex = (y * width + x) * pixelBytes * 8 + layer;
-                    BitArray bArray = new BitArray(byteArray);
-                    return bArray[bitIndex];
+                    int byteIndex = bitIndex / 8;
+                    byte b = byteArray[byteIndex];
+                    return (b & (1 << bitIndex % 8)) != 0;
                 }
                 else
                 {
@@ -200,28 +204,48 @@ namespace APIF
                 }
             }
 
+
             public Bitmap GetBitmap()
             {
                 Bitmap bitmap = new Bitmap(width, height, pixelFormat);
 
                 Rectangle size = new Rectangle(0, 0, width, height);
                 BitmapData bmpData = bitmap.LockBits(size, ImageLockMode.ReadWrite, bitmap.PixelFormat);
-                IntPtr ptr = bmpData.Scan0;
-                Marshal.Copy(byteArray, 0, ptr, byteArray.Length);
+
+                for (int i = 0; i < height; i++)
+                {
+                    IntPtr ptr = IntPtr.Add(bmpData.Scan0, i * bmpData.Stride);
+                    Marshal.Copy(byteArray, i * width * pixelBytes, ptr, width * pixelBytes);
+                }
+
                 bitmap.UnlockBits(bmpData);
 
                 return bitmap;
+            }
+
+
+            public byte[] GetRawPixelBytes()
+            {
+                return byteArray;
+            }
+
+            public void SetRawPixelBytes(byte[] rawPixelBytes)
+            {
+                if (rawPixelBytes.Length == byteArray.Length)
+                {
+                    byteArray = rawPixelBytes;
+                }
             }
         }
 
         public class BitStreamFIFO
         {
-            List<bool> allData;
+            LinkedList<bool> allData;
             public int Length { get { return allData.Count; } }
 
             public BitStreamFIFO()
             {
-                allData = new List<bool>();
+                allData = new LinkedList<bool>();
             }
 
             public BitStreamFIFO(byte[] byteArray)
@@ -230,26 +254,29 @@ namespace APIF
 
                 bool[] boolArray = new bool[byteArray.Length * 8];
                 new BitArray(byteArray).CopyTo(boolArray, 0);
-                allData = new List<bool>(boolArray);
+                allData = new LinkedList<bool>(boolArray);
             }
 
             public BitStreamFIFO(bool[] boolArray)
             {
                 BlockNull(boolArray);
-                allData = new List<bool>(boolArray);
+                allData = new LinkedList<bool>(boolArray);
             }
 
 
             public void Write(bool[] boolArray)
             {
                 BlockNull(boolArray);
-                allData.AddRange(boolArray);
+                foreach (bool b in boolArray)
+                {
+                    allData.AddLast(b);
+                }
             }
 
             public void Write(bool inputBool)
             {
                 BlockNull(inputBool);
-                allData.Add(inputBool);
+                allData.AddLast(inputBool);
             }
 
             public void Write(int number, int bitCount)
@@ -273,8 +300,12 @@ namespace APIF
                 BlockNull(length);
                 if (allData.Count < length) { throw new ArgumentOutOfRangeException("'length' is greater than BitStreamFIFO length"); }
 
-                bool[] output = allData.GetRange(0, length).ToArray();
-                allData.RemoveRange(0, length);
+                bool[] output = new bool[length];
+                for (int i = 0; i < length; i++)
+                {
+                    output[i] = allData.First.Value;
+                    allData.RemoveFirst();
+                }
                 return output;
             }
 
@@ -282,8 +313,8 @@ namespace APIF
             {
                 if (allData.Count < 1) { throw new Exception("Cannot read from empty BitStreamFIFO"); }
 
-                bool output = allData[0];
-                allData.RemoveAt(0);
+                bool output = allData.First.Value;
+                allData.RemoveFirst();
                 return output;
             }
 
@@ -357,6 +388,11 @@ namespace APIF
                 return (byte)BoolArrayToInt(source);
             }
 
+            public byte[] ToByteArray()
+            {
+                return BoolArrayToByteArray(allData.ToArray());
+            }
+
 
 
             private void BlockNull(object var)
@@ -375,14 +411,26 @@ namespace APIF
 
             AccessibleBitmap aBitmap = new AccessibleBitmap(bitmap);
 
-            byte[] header = new byte[5];
-            header[0] = (byte)aBitmap.pixelBytes;
-            header[1] = (byte)(aBitmap.width >> 8);
-            header[2] = (byte)aBitmap.width;
-            header[3] = (byte)(aBitmap.height >> 8);
-            header[4] = (byte)aBitmap.height;
-
+            int compressionType = 0;
             byte[] image = UncompressedBitmapCompressor.Compress(aBitmap);
+
+            byte[] tempImage = BitLayerVaryingCompresor.Compress(aBitmap);
+            if (tempImage.Length < image.Length)
+            {
+                image = tempImage;
+                compressionType = 1;
+            }
+
+
+            byte[] header = new byte[7];
+            header[0] = (byte)version;
+            header[1] = (byte)aBitmap.pixelBytes;
+            header[2] = (byte)(aBitmap.width >> 8);
+            header[3] = (byte)aBitmap.width;
+            header[4] = (byte)(aBitmap.height >> 8);
+            header[5] = (byte)aBitmap.height;
+            header[6] = (byte)compressionType;
+
             byte[] fileBytes = new byte[header.Length + image.Length];
             Array.Copy(header, fileBytes, header.Length);
             Array.Copy(image, 0, fileBytes, header.Length, image.Length);
@@ -394,16 +442,32 @@ namespace APIF
 
         public Bitmap Decode(byte[] bytes)
         {
+            if (bytes[0] != version) { throw new Exception("Version not matching"); }
+
             encodingStart = DateTime.Now.TimeOfDay;
 
-            int pixelBytes = bytes[0];
-            int width = bytes[1] * 256 + bytes[2];
-            int height = bytes[3] * 256 + bytes[4];
+            int pixelBytes = bytes[1];
+            int width = bytes[2] * 256 + bytes[3];
+            int height = bytes[4] * 256 + bytes[5];
+            int compressionType = bytes[6];
 
-            byte[] image = new byte[bytes.Length - 5];
-            Array.Copy(bytes, 5, image, 0, image.Length);
+            byte[] image = new byte[bytes.Length - 7];
+            Array.Copy(bytes, 7, image, 0, image.Length);
 
-            AccessibleBitmap outputBitmap = UncompressedBitmapCompressor.Decompress(image, width, height, pixelBytes);
+            AccessibleBitmap outputBitmap = null;
+            switch (compressionType)
+            {
+                case 0:
+                    outputBitmap = UncompressedBitmapCompressor.Decompress(image, width, height, pixelBytes);
+                    break;
+
+                case 1:
+                    outputBitmap = BitLayerVaryingCompresor.Decompress(image, width, height, pixelBytes);
+                    break;
+
+                default:
+                    throw new Exception("Unexisting compression type");
+            }
 
             encodingStop = DateTime.Now.TimeOfDay;
             compressionRate = (double)bytes.Length / (outputBitmap.width * outputBitmap.height);
