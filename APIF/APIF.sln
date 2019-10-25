@@ -7,6 +7,20 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "APIF", "APIF\APIF.csproj", 
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ImageAnalizer", "ImageAnalizer\ImageAnalizer.csproj", "{54C9F84B-2E94-42D6-8A2E-D1C66DDB9D81}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "BenchmarkImages", "BenchmarkImages", "{75581CB3-53F1-47F6-BD67-F295E21F6178}"
+	ProjectSection(SolutionItems) = preProject
+		..\..\..\..\..\Documents\School\PWS\Benchmark\abstract.bmp = ..\..\..\..\..\Documents\School\PWS\Benchmark\abstract.bmp
+		..\..\..\..\..\Documents\School\PWS\Benchmark\adolf.bmp = ..\..\..\..\..\Documents\School\PWS\Benchmark\adolf.bmp
+		..\..\..\..\..\Documents\School\PWS\Benchmark\bergen.bmp = ..\..\..\..\..\Documents\School\PWS\Benchmark\bergen.bmp
+		..\..\..\..\..\Documents\School\PWS\Benchmark\herfst.bmp = ..\..\..\..\..\Documents\School\PWS\Benchmark\herfst.bmp
+		..\..\..\..\..\Documents\School\PWS\Benchmark\jungle.bmp = ..\..\..\..\..\Documents\School\PWS\Benchmark\jungle.bmp
+		..\..\..\..\..\Documents\School\PWS\Benchmark\pepe.bmp = ..\..\..\..\..\Documents\School\PWS\Benchmark\pepe.bmp
+		..\..\..\..\..\Documents\School\PWS\Benchmark\praag.bmp = ..\..\..\..\..\Documents\School\PWS\Benchmark\praag.bmp
+		..\..\..\..\..\Documents\School\PWS\Benchmark\sunflare.bmp = ..\..\..\..\..\Documents\School\PWS\Benchmark\sunflare.bmp
+		..\..\..\..\..\Documents\School\PWS\Benchmark\woestijn.bmp = ..\..\..\..\..\Documents\School\PWS\Benchmark\woestijn.bmp
+		..\..\..\..\..\Documents\School\PWS\Benchmark\zee.bmp = ..\..\..\..\..\Documents\School\PWS\Benchmark\zee.bmp
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
