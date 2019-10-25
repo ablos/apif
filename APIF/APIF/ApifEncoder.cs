@@ -388,9 +388,34 @@ namespace APIF
                 return (byte)BoolArrayToInt(source);
             }
 
+
             public byte[] ToByteArray()
             {
                 return BoolArrayToByteArray(allData.ToArray());
+            }
+
+            public bool[] ToBoolArray()
+            {
+                return allData.ToArray();
+            }
+
+            public static BitStreamFIFO Merge(BitStreamFIFO[] bitStreams)
+            {
+                int newLength = 0;
+                foreach(BitStreamFIFO bitStream in bitStreams)
+                {
+                    newLength += bitStream.Length;
+                }
+
+                bool[] mergedBools = new bool[newLength];
+                int currentIndex = 0;
+                foreach (BitStreamFIFO bitStream in bitStreams)
+                {
+                    Array.Copy(bitStream.ToBoolArray(), 0, mergedBools, currentIndex, bitStream.Length);
+                    currentIndex += bitStream.Length;
+                }
+
+                return new BitStreamFIFO(mergedBools);
             }
 
 
