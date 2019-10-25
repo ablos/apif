@@ -42,6 +42,7 @@ namespace APIF
         }
 
 
+        //Class for easily reading from & writing pixels to a bitmap
         public class AccessibleBitmap
         {
             private byte[] byteArray;
@@ -238,6 +239,7 @@ namespace APIF
             }
         }
 
+        //Class for easily storing and accessing data which exceeds the boundary of 8 bits which byte arrays come with
         public class BitStreamFIFO
         {
             LinkedList<bool> allData;
@@ -430,15 +432,19 @@ namespace APIF
         }
 
 
+        //Encodes a C# Bitmap image to a byte array containing this image compressed as APIF image
         public byte[] Encode(Bitmap bitmap)
         {
+            //Start timer for compression time
             encodingStart = DateTime.Now.TimeOfDay;
 
             AccessibleBitmap aBitmap = new AccessibleBitmap(bitmap);
 
+            //Set default compression
             int compressionType = 0;
             byte[] image = UncompressedBitmapCompressor.Compress(aBitmap);
 
+            //Replace current image data with BitLayerVaryingCompression if it is smaller
             byte[] tempImage = BitLayerVaryingCompresor.Compress(aBitmap);
             if (tempImage.Length < image.Length)
             {
@@ -447,6 +453,7 @@ namespace APIF
             }
 
 
+            //Build the file header containing information for the decoder
             byte[] header = new byte[7];
             header[0] = (byte)version;
             header[1] = (byte)aBitmap.pixelBytes;
@@ -456,44 +463,56 @@ namespace APIF
             header[5] = (byte)aBitmap.height;
             header[6] = (byte)compressionType;
 
+            //Merge the header with the image data
             byte[] fileBytes = new byte[header.Length + image.Length];
             Array.Copy(header, fileBytes, header.Length);
             Array.Copy(image, 0, fileBytes, header.Length, image.Length);
 
+            //Stop timer & return byte array
             encodingStop = DateTime.Now.TimeOfDay;
             compressionRate = (double)fileBytes.Length / (aBitmap.width * aBitmap.height);
             return fileBytes;
         }
 
+        //Decodes a byte array containing a compressed APIF image to a C# Bitmap image
         public Bitmap Decode(byte[] bytes)
         {
+            //Check if the file version matches the version of the this decoder
             if (bytes[0] != version) { throw new Exception("Version not matching"); }
 
+            //Start timer for decoding time
             encodingStart = DateTime.Now.TimeOfDay;
 
+            //Read the header info to the correct variables
             int pixelBytes = bytes[1];
             int width = bytes[2] * 256 + bytes[3];
             int height = bytes[4] * 256 + bytes[5];
             int compressionType = bytes[6];
 
+            //Stores the image data apart from the header
             byte[] image = new byte[bytes.Length - 7];
             Array.Copy(bytes, 7, image, 0, image.Length);
 
+            //Choose the right decoding type from the header info
             AccessibleBitmap outputBitmap = null;
             switch (compressionType)
             {
+                //Uncompressed bitmap
                 case 0:
                     outputBitmap = UncompressedBitmapCompressor.Decompress(image, width, height, pixelBytes);
                     break;
 
+                //BitLayerVaryingCompression
                 case 1:
                     outputBitmap = BitLayerVaryingCompresor.Decompress(image, width, height, pixelBytes);
                     break;
 
+                //Unknown compression type: error
                 default:
                     throw new Exception("Unexisting compression type");
             }
 
+            //Stop timer & return bitmap
             encodingStop = DateTime.Now.TimeOfDay;
             compressionRate = (double)bytes.Length / (outputBitmap.width * outputBitmap.height);
             return outputBitmap.GetBitmap();
