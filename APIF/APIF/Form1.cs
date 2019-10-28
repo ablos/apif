@@ -26,12 +26,6 @@ namespace APIF
         string openImageFilter = "Image files (*.apif, *.bmp, *.png, *.jpg, *.jpeg, *.jpe, *.jfif, *.webp)| *.apif; *.bmp; *.png; *.jpg; *.jpeg; *.jpe; *.jfif; *.webp";
         string saveImageFilter = "BMP Image (*.bmp)|*.bmp|PNG Image (*.png)|*.png|JPEG Image (*.jpg)|*.jpg|JFIF Image (*.jfif)|*.jfif|WEBP Image (*.webp)|*.webp";
 
-        private void UpdateProgressBar(int progress)
-        {
-            conversionProgressBar.Value = progress;
-            conversionProgressLabel.Text = progress.ToString() + "%";
-        }
-
         private void OpenFile(object sender, EventArgs e)
         {
             OpenFileDialog openFileDialog = new OpenFileDialog();
@@ -92,21 +86,32 @@ namespace APIF
         private void ManageEncoding(string path)
         {
             ApifEncoder encoder = new ApifEncoder();
+            encoder.SetStatusHandler(SetStatus, this);
+
             byte[] file = encoder.Encode(image);
             File.WriteAllBytes(path, file);
 
             conversionProgressLabel.Text = encoder.GetEncodingTime().TotalMilliseconds.ToString("F1") + "ms";
-            compressionLabel.Text = "compression = " + encoder.GetCompressionRate().ToString("F3");
+            compressionLabel.Text = encoder.GetCompressionRate().ToString("F3");
+            compressionTypeLabel.Text = encoder.GetCompressionType().ToString();
         }
 
         private void ManageDecoding(string path)
         {
             ApifEncoder encoder = new ApifEncoder();
+            encoder.SetStatusHandler(SetStatus, this);
+
             image = encoder.Decode(File.ReadAllBytes(path));
             imagepreview.Image = image;
 
             conversionProgressLabel.Text = encoder.GetEncodingTime().TotalMilliseconds.ToString("F1") + "ms";
-            compressionLabel.Text = "compression = " + encoder.GetCompressionRate().ToString("F3");
+            compressionLabel.Text = encoder.GetCompressionRate().ToString("F3");
+            compressionTypeLabel.Text = encoder.GetCompressionType().ToString();
+        }
+
+        private void SetStatus(string status)
+        {
+            StatusLabel.Text = status;
         }
     }
 }

@@ -7,6 +7,7 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
+using System.Windows.Forms;
 
 namespace APIF
 {
@@ -40,6 +41,28 @@ namespace APIF
                 return -1;
             }
         }
+
+        private int compressionType = 0;
+        public double GetCompressionType()
+        {
+            if (encodingStart.TotalMilliseconds < encodingStop.TotalMilliseconds)
+            {
+                return compressionType;
+            }
+            else
+            {
+                return -1;
+            }
+        }
+
+        private Action<string> statusReceiver;
+        private Control classUI;
+        public void SetStatusHandler(Action<string> statusReceiverFunction, Control classOfUI)
+        {
+            classUI = classOfUI;
+            statusReceiver = statusReceiverFunction;
+        }
+
 
 
         //Class for easily reading from & writing pixels to a bitmap
@@ -242,43 +265,39 @@ namespace APIF
         //Class for easily storing and accessing data which exceeds the boundary of 8 bits which byte arrays come with
         public class BitStreamFIFO
         {
-            LinkedList<bool> allData;
+            List<bool> allData;
+            int readIndex;
             public int Length { get { return allData.Count; } }
 
             public BitStreamFIFO()
             {
-                allData = new LinkedList<bool>();
+                allData = new List<bool>();
+                readIndex = 0;
             }
 
             public BitStreamFIFO(byte[] byteArray)
             {
-                BlockNull(byteArray);
-
                 bool[] boolArray = new bool[byteArray.Length * 8];
                 new BitArray(byteArray).CopyTo(boolArray, 0);
-                allData = new LinkedList<bool>(boolArray);
+                allData = new List<bool>(boolArray);
+                readIndex = 0;
             }
 
             public BitStreamFIFO(bool[] boolArray)
             {
-                BlockNull(boolArray);
-                allData = new LinkedList<bool>(boolArray);
+                allData = new List<bool>(boolArray);
+                readIndex = 0;
             }
 
 
             public void Write(bool[] boolArray)
             {
-                BlockNull(boolArray);
-                foreach (bool b in boolArray)
-                {
-                    allData.AddLast(b);
-                }
+                allData.AddRange(boolArray);
             }
 
             public void Write(bool inputBool)
             {
-                BlockNull(inputBool);
-                allData.AddLast(inputBool);
+                allData.Add(inputBool);
             }
 
             public void Write(int number, int bitCount)
@@ -299,24 +318,19 @@ namespace APIF
 
             public bool[] ReadBoolArray(int length)
             {
-                BlockNull(length);
-                if (allData.Count < length) { throw new ArgumentOutOfRangeException("'length' is greater than BitStreamFIFO length"); }
+                if (allData.Count - readIndex < length) { throw new ArgumentOutOfRangeException("'length' is greater than BitStreamFIFO length"); }
 
-                bool[] output = new bool[length];
-                for (int i = 0; i < length; i++)
-                {
-                    output[i] = allData.First.Value;
-                    allData.RemoveFirst();
-                }
+                bool[] output = allData.GetRange(readIndex, length).ToArray();
+                readIndex += length;
                 return output;
             }
 
             public bool ReadBool()
             {
-                if (allData.Count < 1) { throw new Exception("Cannot read from empty BitStreamFIFO"); }
+                if (allData.Count - readIndex < 1) { throw new Exception("Cannot read from empty BitStreamFIFO"); }
 
-                bool output = allData.First.Value;
-                allData.RemoveFirst();
+                bool output = allData[readIndex];
+                readIndex++;
                 return output;
             }
 
@@ -339,9 +353,6 @@ namespace APIF
 
             public bool[] IntToBoolArray(int number, int bitCount)
             {
-                BlockNull(number);
-                BlockNull(bitCount);
-
                 BitArray tempBits = new BitArray(new int[] { number });
                 tempBits.Length = bitCount;
                 bool[] output = new bool[bitCount];
@@ -356,8 +367,6 @@ namespace APIF
 
             public bool[] ByteArrayToBoolArray(byte[] input)
             {
-                BlockNull(input);
-
                 BitArray tempBits = new BitArray(input);
                 bool[] output = new bool[tempBits.Count];
                 tempBits.CopyTo(output, 0);
@@ -367,8 +376,6 @@ namespace APIF
 
             public int BoolArrayToInt(bool[] source)
             {
-                BlockNull(source);
-
                 BitArray tempBits = new BitArray(source);
                 int[] tempArray = new int[1];
                 tempBits.CopyTo(tempArray, 0);
@@ -377,8 +384,6 @@ namespace APIF
 
             public byte[] BoolArrayToByteArray(bool[] source)
             {
-                BlockNull(source);
-
                 BitArray tempBits = new BitArray(source);
                 byte[] output = new byte[(source.Length + 7) / 8];
                 tempBits.CopyTo(output, 0);
@@ -419,16 +424,6 @@ namespace APIF
 
                 return new BitStreamFIFO(mergedBools);
             }
-
-
-
-            private void BlockNull(object var)
-            {
-                if(var == null)
-                {
-                    throw new ArgumentNullException("Input var may not be null");
-                }
-            }
         }
 
 
@@ -436,15 +431,17 @@ namespace APIF
         public byte[] Encode(Bitmap bitmap)
         {
             //Start timer for compression time
+            SetStatus("Decompressing");
             encodingStart = DateTime.Now.TimeOfDay;
 
             AccessibleBitmap aBitmap = new AccessibleBitmap(bitmap);
 
             //Set default compression
-            int compressionType = 0;
+            compressionType = 0;
             byte[] image = UncompressedBitmapCompressor.Compress(aBitmap);
 
             //Replace current image data with BitLayerVaryingCompression if it is smaller
+            SetStatus("Trying BitLayer Compression");
             byte[] tempImage = BitLayerVaryingCompresor.Compress(aBitmap);
             if (tempImage.Length < image.Length)
             {
@@ -471,6 +468,7 @@ namespace APIF
             //Stop timer & return byte array
             encodingStop = DateTime.Now.TimeOfDay;
             compressionRate = (double)fileBytes.Length / (aBitmap.width * aBitmap.height);
+            SetStatus("Finished");
             return fileBytes;
         }
 
@@ -487,7 +485,7 @@ namespace APIF
             int pixelBytes = bytes[1];
             int width = bytes[2] * 256 + bytes[3];
             int height = bytes[4] * 256 + bytes[5];
-            int compressionType = bytes[6];
+            compressionType = bytes[6];
 
             //Stores the image data apart from the header
             byte[] image = new byte[bytes.Length - 7];
@@ -515,7 +513,17 @@ namespace APIF
             //Stop timer & return bitmap
             encodingStop = DateTime.Now.TimeOfDay;
             compressionRate = (double)bytes.Length / (outputBitmap.width * outputBitmap.height);
+            SetStatus("Finished");
             return outputBitmap.GetBitmap();
+        }
+
+        private void SetStatus(string status)
+        {
+            try
+            {
+                classUI.Invoke((MethodInvoker)delegate { statusReceiver(status); });
+            }
+            catch { }
         }
     }
 }
