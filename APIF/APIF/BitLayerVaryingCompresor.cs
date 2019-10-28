@@ -20,7 +20,11 @@ namespace APIF
                 bitStreams[z] = Uncompressed(source, z);
 
                 //Compress layer using RunLength and replace previous compression if smaller
-                BitStreamFIFO tmpStream = RunLength(source, z);
+                BitStreamFIFO tmpStream = RunLengthHorizontal(source, z);
+                if (tmpStream.Length < bitStreams[z].Length) { bitStreams[z] = tmpStream; }
+
+                //Compress layer using RunLength and replace previous compression if smaller
+                tmpStream = RunLengthVertical(source, z);
                 if (tmpStream.Length < bitStreams[z].Length) { bitStreams[z] = tmpStream; }
             }
 
@@ -48,7 +52,7 @@ namespace APIF
         }
 
         //Return bit layer compressed using RunLength
-        private static BitStreamFIFO RunLength(AccessibleBitmap source, int z)
+        private static BitStreamFIFO RunLengthHorizontal(AccessibleBitmap source, int z)
         {
             //Initialize vars
             BitStreamFIFO bitStream = new BitStreamFIFO();
@@ -98,6 +102,57 @@ namespace APIF
             return bitStream;
         }
 
+        //Return bit layer compressed using RunLength
+        private static BitStreamFIFO RunLengthVertical(AccessibleBitmap source, int z)
+        {
+            //Initialize vars
+            BitStreamFIFO bitStream = new BitStreamFIFO();
+            List<int> distances = new List<int>();
+            int tempDistance = -1;
+            bool lastVal = source.GetPixelBit(0, 0, z);
+
+            //Iterate trough pixels
+            for (int x = 0; x < source.width; x++)
+            {
+                for (int y = 0; y < source.height; y++)
+                {
+                    //Take value of pixel & compare with previous value
+                    bool currentBool = source.GetPixelBit(x, y, z);
+                    if (currentBool == lastVal)
+                    {
+                        //Values are the same, so increase current run
+                        tempDistance++;
+                    }
+                    else
+                    {
+                        //Values are not the same, so save the run and create a new one
+                        distances.Add(tempDistance);
+                        lastVal = currentBool;
+                        tempDistance = 0;
+                    }
+                }
+            }
+            //Save the last run becouse this never happens in the loop
+            distances.Add(tempDistance);
+
+            //Get info about the collection of runs, to make sure that the longest run fits in every int, while trying to keep the ints as short as possible
+            bool initialVal = source.GetPixelBit(0, 0, z);
+            int bitDepth = (int)Math.Ceiling(Math.Log(distances.Max(), 2));
+
+            //Write necessary info for decompressing to stream
+            bitStream.Write(2, 3);
+            bitStream.Write(initialVal);
+            bitStream.Write((byte)bitDepth);
+
+            //Write all runs to the stream
+            foreach (int i in distances)
+            {
+                bitStream.Write(i, bitDepth);
+            }
+
+            return bitStream;
+        }
+
 
 
         //Decompress byte array into aBitmap with help of width, length and bitdepth
@@ -126,7 +181,7 @@ namespace APIF
                         }
                         break;
 
-                    //RunLength
+                    //RunLengthHorizontal
                     case 1:
                         //Read necessary info from BitStream
                         bool currentVal = bitStream.ReadBool();
@@ -144,6 +199,33 @@ namespace APIF
                                 //Decrease the length of the current run & check if the end has bin reached
                                 pixelsToGo--;
                                 if (pixelsToGo == 0 && (x * y != (height - 1) * (width - 1)))
+                                {
+                                    //Read the new run length from the BitStream & reverse the run bit
+                                    pixelsToGo = bitStream.ReadInt(bitDepth) + 1;
+                                    currentVal = !currentVal;
+                                }
+                            }
+                        }
+                        break;
+
+                    //RunLengthVertical
+                    case 2:
+                        //Read necessary info from BitStream
+                        currentVal = bitStream.ReadBool();
+                        bitDepth = bitStream.ReadByte();
+                        pixelsToGo = bitStream.ReadInt(bitDepth) + 1;
+
+                        //Iterate trough all pixels
+                        for (int x = 0; x < width; x++)
+                        {
+                            for (int y = 0; y < height; y++)
+                            {
+                                //Set the bit of the current pixel to the value of the current run
+                                aBitmap.SetPixelBit(x, y, z, currentVal);
+
+                                //Decrease the length of the current run & check if the end has bin reached
+                                pixelsToGo--;
+                                if (pixelsToGo == 0 && (y * x != (height - 1) * (width - 1)))
                                 {
                                     //Read the new run length from the BitStream & reverse the run bit
                                     pixelsToGo = bitStream.ReadInt(bitDepth) + 1;
