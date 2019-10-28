@@ -15,6 +15,7 @@ namespace APIF
     {
         private static int version = 1;
 
+        #region PublicVars
         private TimeSpan encodingStart = TimeSpan.FromMilliseconds(1);
         private TimeSpan encodingStop = TimeSpan.FromMilliseconds(0);
         public TimeSpan GetEncodingTime()
@@ -62,6 +63,7 @@ namespace APIF
             classUI = classOfUI;
             statusReceiver = statusReceiverFunction;
         }
+        #endregion
 
 
 
@@ -157,7 +159,7 @@ namespace APIF
                         throw new ArgumentException("Invalid pixelformat");
                 }
 
-                if(bmpWidth < 1 || bmpHeight < 1)
+                if (bmpWidth < 1 || bmpHeight < 1)
                 {
                     throw new ArgumentException("AccessibleBitmap dimensions must be 1 or greater");
                 }
@@ -259,6 +261,49 @@ namespace APIF
                 {
                     byteArray = rawPixelBytes;
                 }
+            }
+        }
+
+        //Class for easily reading from & writing pixels to a bitmap
+        public class AccessibleBitmapBitwise
+        {
+            private bool[] boolArray;
+            public int height;
+            public int width;
+            public int pixelBytes;
+
+            public AccessibleBitmapBitwise(AccessibleBitmap aBitmap)
+            {
+                width = aBitmap.width;
+                height = aBitmap.height;
+                pixelBytes = aBitmap.pixelBytes;
+
+                byte[] tmpBytes = aBitmap.GetRawPixelBytes();
+                boolArray = new bool[tmpBytes.Length * 8];
+                new BitArray(tmpBytes).CopyTo(boolArray, 0);
+            }
+
+
+            public void SetPixelBit(int x, int y, int layer, bool bit)
+            {
+                boolArray[(y * width + x) * pixelBytes * 8 + layer] = bit;
+            }
+
+            public bool GetPixelBit(int x, int y, int layer)
+            {
+                    return boolArray[(y * width + x) * pixelBytes * 8 + layer];
+            }
+
+
+            public AccessibleBitmap GetAccessibleBitmap()
+            {
+                byte[] tmpBytes = new byte[width * height * pixelBytes];
+                new BitArray(boolArray).CopyTo(tmpBytes, 0);
+
+                AccessibleBitmap aBitmap = new AccessibleBitmap(width, height, pixelBytes);
+                aBitmap.SetRawPixelBytes(tmpBytes);
+
+                return aBitmap;
             }
         }
 

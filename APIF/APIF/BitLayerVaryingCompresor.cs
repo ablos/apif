@@ -12,19 +12,20 @@ namespace APIF
         //Compress aBitmap into byte array
         public static byte[] Compress(AccessibleBitmap source)
         {
-            BitStreamFIFO[] bitStreams = new BitStreamFIFO[source.pixelBytes * 8];
+            AccessibleBitmapBitwise aBitmap = new AccessibleBitmapBitwise(source);
+            BitStreamFIFO[] bitStreams = new BitStreamFIFO[aBitmap.pixelBytes * 8];
 
             //Iterate trough all layers of bitdepth
-            for (int z = 0; z < source.pixelBytes * 8; z++)
+            for (int z = 0; z < aBitmap.pixelBytes * 8; z++)
             {
-                bitStreams[z] = Uncompressed(source, z);
+                bitStreams[z] = Uncompressed(aBitmap, z);
 
                 //Compress layer using RunLength and replace previous compression if smaller
-                BitStreamFIFO tmpStream = RunLengthHorizontal(source, z);
+                BitStreamFIFO tmpStream = RunLengthHorizontal(aBitmap, z);
                 if (tmpStream.Length < bitStreams[z].Length) { bitStreams[z] = tmpStream; }
 
                 //Compress layer using RunLength and replace previous compression if smaller
-                tmpStream = RunLengthVertical(source, z);
+                tmpStream = RunLengthVertical(aBitmap, z);
                 if (tmpStream.Length < bitStreams[z].Length) { bitStreams[z] = tmpStream; }
             }
 
@@ -34,39 +35,39 @@ namespace APIF
 
 
         //Return bit layer uncompressed
-        private static BitStreamFIFO Uncompressed(AccessibleBitmap source, int z)
+        private static BitStreamFIFO Uncompressed(AccessibleBitmapBitwise aBitmap, int z)
         {
             BitStreamFIFO bitStream = new BitStreamFIFO();
 
             //Write 3-bit int to specify compression type & iterate trough all pixels of aBitmap
             bitStream.Write(0, 3);
-            for (int y = 0; y < source.height; y++)
+            for (int y = 0; y < aBitmap.height; y++)
             {
-                for (int x = 0; x < source.width; x++)
+                for (int x = 0; x < aBitmap.width; x++)
                 {
                     //Write bit of current pixel to stream
-                    bitStream.Write(source.GetPixelBit(x, y, z));
+                    bitStream.Write(aBitmap.GetPixelBit(x, y, z));
                 }
             }
             return bitStream;
         }
 
         //Return bit layer compressed using RunLength
-        private static BitStreamFIFO RunLengthHorizontal(AccessibleBitmap source, int z)
+        private static BitStreamFIFO RunLengthHorizontal(AccessibleBitmapBitwise aBitmap, int z)
         {
             //Initialize vars
             BitStreamFIFO bitStream = new BitStreamFIFO();
             List<int> distances = new List<int>();
             int tempDistance = -1;
-            bool lastVal = source.GetPixelBit(0, 0, z);
+            bool lastVal = aBitmap.GetPixelBit(0, 0, z);
 
             //Iterate trough pixels
-            for (int y = 0; y < source.height; y++)
+            for (int y = 0; y < aBitmap.height; y++)
             {
-                for (int x = 0; x < source.width; x++)
+                for (int x = 0; x < aBitmap.width; x++)
                 {
                     //Take value of pixel & compare with previous value
-                    bool currentBool = source.GetPixelBit(x, y, z);
+                    bool currentBool = aBitmap.GetPixelBit(x, y, z);
                     if (currentBool == lastVal)
                     {
                         //Values are the same, so increase current run
@@ -85,7 +86,7 @@ namespace APIF
             distances.Add(tempDistance);
 
             //Get info about the collection of runs, to make sure that the longest run fits in every int, while trying to keep the ints as short as possible
-            bool initialVal = source.GetPixelBit(0, 0, z);
+            bool initialVal = aBitmap.GetPixelBit(0, 0, z);
             int bitDepth = (int)Math.Ceiling(Math.Log(distances.Max(), 2));
 
             //Write necessary info for decompressing to stream
@@ -103,21 +104,21 @@ namespace APIF
         }
 
         //Return bit layer compressed using RunLength
-        private static BitStreamFIFO RunLengthVertical(AccessibleBitmap source, int z)
+        private static BitStreamFIFO RunLengthVertical(AccessibleBitmapBitwise aBitmap, int z)
         {
             //Initialize vars
             BitStreamFIFO bitStream = new BitStreamFIFO();
             List<int> distances = new List<int>();
             int tempDistance = -1;
-            bool lastVal = source.GetPixelBit(0, 0, z);
+            bool lastVal = aBitmap.GetPixelBit(0, 0, z);
 
             //Iterate trough pixels
-            for (int x = 0; x < source.width; x++)
+            for (int x = 0; x < aBitmap.width; x++)
             {
-                for (int y = 0; y < source.height; y++)
+                for (int y = 0; y < aBitmap.height; y++)
                 {
                     //Take value of pixel & compare with previous value
-                    bool currentBool = source.GetPixelBit(x, y, z);
+                    bool currentBool = aBitmap.GetPixelBit(x, y, z);
                     if (currentBool == lastVal)
                     {
                         //Values are the same, so increase current run
@@ -136,7 +137,7 @@ namespace APIF
             distances.Add(tempDistance);
 
             //Get info about the collection of runs, to make sure that the longest run fits in every int, while trying to keep the ints as short as possible
-            bool initialVal = source.GetPixelBit(0, 0, z);
+            bool initialVal = aBitmap.GetPixelBit(0, 0, z);
             int bitDepth = (int)Math.Ceiling(Math.Log(distances.Max(), 2));
 
             //Write necessary info for decompressing to stream
@@ -159,7 +160,7 @@ namespace APIF
         public static AccessibleBitmap Decompress(byte[] source, int width, int height, int pixelBytes)
         {
             //Create aBitmap for output & create BitStream from byte array for easy reading of bits
-            AccessibleBitmap aBitmap = new AccessibleBitmap(width, height, pixelBytes);
+            AccessibleBitmapBitwise aBitmap = new AccessibleBitmapBitwise(new AccessibleBitmap(width, height, pixelBytes));
             BitStreamFIFO bitStream = new BitStreamFIFO(source);
 
             //Iterate trough all bit layers
@@ -241,7 +242,7 @@ namespace APIF
                 }
             }
 
-            return aBitmap;
+            return aBitmap.GetAccessibleBitmap();
         }
     }
 }

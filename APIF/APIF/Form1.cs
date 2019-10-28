@@ -46,6 +46,7 @@ namespace APIF
                 {
                     image = new Bitmap(openFileDialog.FileName);
                     imagepreview.Image = image;
+                    SetStatus("Idle");
                 }
             }
         }
