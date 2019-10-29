@@ -131,7 +131,7 @@ namespace APIF
             return bytes.ToArray();
         }
 
-        // This function will decompress the APIF which is compressed using this RLE Compressor
+        // This function will decompress the APIF which is compressed using this RLE Compressor and return a AccessibleBitmap
         public AccessibleBitmap Decompress(byte[] source, int width, int height, int pixelBytes)
         {
             // Create new bitmap to add pixels to
@@ -186,12 +186,16 @@ namespace APIF
                 }
             }
 
+            // Return the completed AccessibleBitmap
             return bmp;
         }
 
+        // This function will add the bytes to the byte list.
         private void AddBytes(int colorCounter, byte[] pixel)
         {
+            // Add color counter value
             bytes.Add((byte)(colorCounter - 1));
+            // Add every pixel value (RGBA)
             foreach (byte b in pixel)
             {
                 bytes.Add(b);
