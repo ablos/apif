@@ -265,6 +265,43 @@ namespace APIF
         }
 
         //Class for easily reading from & writing pixels to a bitmap
+        public class AccessibleBitmapBytewise
+        {
+            private byte[] byteArray;
+            public int height;
+            public int width;
+            public int pixelBytes;
+
+            public AccessibleBitmapBytewise(AccessibleBitmap aBitmap)
+            {
+                width = aBitmap.width;
+                height = aBitmap.height;
+                pixelBytes = aBitmap.pixelBytes;
+                byteArray = aBitmap.GetRawPixelBytes();
+            }
+
+
+            public void SetPixelByte(int x, int y, int layer, byte byteValue)
+            {
+                byteArray[(y * width + x) * pixelBytes + layer] = byteValue;
+            }
+
+            public byte GetPixelByte(int x, int y, int layer)
+            {
+                return byteArray[(y * width + x) * pixelBytes + layer];
+            }
+
+
+            public AccessibleBitmap GetAccessibleBitmap()
+            {
+                AccessibleBitmap aBitmap = new AccessibleBitmap(width, height, pixelBytes);
+                aBitmap.SetRawPixelBytes(byteArray);
+
+                return aBitmap;
+            }
+        }
+
+        //Class for easily reading from & writing pixels to a bitmap
         public class AccessibleBitmapBitwise
         {
             private bool[] boolArray;
@@ -483,17 +520,40 @@ namespace APIF
 
             //Set default compression
             compressionType = 0;
-            byte[] image = UncompressedBitmapCompressor.Compress(aBitmap);
 
-            //Replace current image data with BitLayerVaryingCompression if it is smaller
-            SetStatus("Trying BitLayer Compression");
-            byte[] tempImage = BitLayerVaryingCompressor.Compress(aBitmap);
-            if (tempImage.Length < image.Length)
+            //Compress image using all different compression techniques
+            byte[][] compressionTechniques = new byte[2][];
+            Parallel.For(0, compressionTechniques.Length, (i, state) => 
             {
-                image = tempImage;
-                compressionType = 1;
-            }
+                switch (i)
+                {
+                    //Uncompressed
+                    case 0:
+                        compressionTechniques[i] = UncompressedBitmapCompressor.Compress(aBitmap);
+                        break;
 
+                    //
+                    case 1:
+                        compressionTechniques[i] = BitLayerVaryingCompressor.Compress(aBitmap);
+                        break;
+
+                    //To add a compression technique, add a new case like the existing ones and increase the length of new byte[??][]
+                }
+            });
+
+            //Choose the smallest compression type
+            int smallestID = 0;
+            int smallestSize = int.MaxValue;
+            for(int i = 0; i < compressionTechniques.Length; i++)
+            {
+                if(compressionTechniques[i].Length < smallestSize)
+                {
+                    smallestSize = compressionTechniques[i].Length;
+                    smallestID = i;
+                }
+            }
+            byte[] image = compressionTechniques[smallestID];
+            compressionType = smallestID;
 
             //Build the file header containing information for the decoder
             byte[] header = new byte[7];
@@ -516,6 +576,8 @@ namespace APIF
             SetStatus("Finished");
             return fileBytes;
         }
+
+
 
         //Decodes a byte array containing a compressed APIF image to a C# Bitmap image
         public Bitmap Decode(byte[] bytes)
@@ -553,6 +615,8 @@ namespace APIF
                 //Unknown compression type: error
                 default:
                     throw new Exception("Unexisting compression type");
+
+                //To add a decompression type add a new case like the existing ones
             }
 
             //Stop timer & return bitmap
@@ -561,6 +625,8 @@ namespace APIF
             SetStatus("Finished");
             return outputBitmap.GetBitmap();
         }
+
+
 
         private void SetStatus(string status)
         {
