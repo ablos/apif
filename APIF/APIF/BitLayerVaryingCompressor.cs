@@ -7,7 +7,7 @@ using static APIF.ApifEncoder;
 
 namespace APIF
 {
-    class BitLayerVaryingCompresor
+    class BitLayerVaryingCompressor
     {
         //Compress aBitmap into byte array
         public static byte[] Compress(AccessibleBitmap source)
@@ -20,13 +20,27 @@ namespace APIF
             {
                 bitStreams[z] = Uncompressed(aBitmap, z);
 
-                //Compress layer using RunLength and replace previous compression if smaller
-                BitStreamFIFO tmpStream = RunLengthHorizontal(aBitmap, z);
-                if (tmpStream.Length < bitStreams[z].Length) { bitStreams[z] = tmpStream; }
+                BitStreamFIFO[] tmpStreams = new BitStreamFIFO[2];
+                Parallel.For(0, tmpStreams.Length, (i, state) => 
+                {
+                    if (i == 0)
+                    {
+                        //Compress layer using RunLength and replace previous compression if smaller
+                        tmpStreams[i] = RunLengthHorizontal(aBitmap, z);
+                    }
 
-                //Compress layer using RunLength and replace previous compression if smaller
-                tmpStream = RunLengthVertical(aBitmap, z);
-                if (tmpStream.Length < bitStreams[z].Length) { bitStreams[z] = tmpStream; }
+                    if (i == 1)
+                    {
+                        //Compress layer using RunLength and replace previous compression if smaller
+                        tmpStreams[i] = RunLengthVertical(aBitmap, z);
+                    }
+                });
+
+                //Take the smallest one
+                foreach(BitStreamFIFO bitStream in tmpStreams)
+                {
+                    if (bitStream.Length < bitStreams[z].Length) { bitStreams[z] = bitStream; }
+                }
             }
 
             //Merge all layers & return byte array

@@ -487,7 +487,7 @@ namespace APIF
 
             //Replace current image data with BitLayerVaryingCompression if it is smaller
             SetStatus("Trying BitLayer Compression");
-            byte[] tempImage = BitLayerVaryingCompresor.Compress(aBitmap);
+            byte[] tempImage = BitLayerVaryingCompressor.Compress(aBitmap);
             if (tempImage.Length < image.Length)
             {
                 image = tempImage;
@@ -547,7 +547,7 @@ namespace APIF
 
                 //BitLayerVaryingCompression
                 case 1:
-                    outputBitmap = BitLayerVaryingCompresor.Decompress(image, width, height, pixelBytes);
+                    outputBitmap = BitLayerVaryingCompressor.Decompress(image, width, height, pixelBytes);
                     break;
 
                 //Unknown compression type: error
