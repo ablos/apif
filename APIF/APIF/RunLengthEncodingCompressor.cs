@@ -195,11 +195,8 @@ namespace APIF
         {
             // Add color counter value
             bytes.Add((byte)(colorCounter - 1));
-            // Add every pixel value (RGBA)
-            foreach (byte b in pixel)
-            {
-                bytes.Add(b);
-            }
+            // Add the pixel value
+            bytes.AddRange(pixel);
         }
     }
 }
