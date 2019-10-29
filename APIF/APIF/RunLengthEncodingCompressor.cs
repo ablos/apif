@@ -10,49 +10,143 @@ namespace APIF
 {
     class RunLengthEncodingCompressor
     {
-        // This function will compress te bitmap and return a new AccessibleBitmap
-        public static byte[] Compress(AccessibleBitmap source)
-        {
-            Color[,] colors = new Color[source.width, source.height];         // 2D color array for setting the bytes to colors for easy comparison
+        // Create a new list to add bytes and will be returned after
+        private List<byte> bytes;
 
-            // Iterate through all the pixels of the bitmap, get their ARGB values and store them as colors in the 2D color array
+        // This function will compress te bitmap and return a new AccessibleBitmap
+        public byte[] CompressHorizontal(AccessibleBitmap source)
+        {
+            // Clear byte list
+            bytes = new List<byte>();
+
+            // Add to byte[] that compression is horizontal
+            bytes.Add(0);
+
+            byte[] lastpixel = null;            // Create variable to store the last pixel
+            int colorCounter = 1;               // Create counter for current color
+
+            // Iterate through every horizontal row
             for (int y = 0; y < source.height; y++)
             {
+                // Iterate through every pixel in the horizontal row
                 for (int x = 0; x < source.width; x++)
                 {
-                    byte[] pixel = source.GetPixel(x, y);
-                    Color c;
-                    if (pixel.Length % 3 == 0)
+                    // Check if the variable lastpixel is empty
+                    if (lastpixel == null)
                     {
-                        // Has no alpha channel
-                        if (pixel.Length == 3)
-                            c = Color.FromArgb(pixel[0], pixel[1], pixel[2]);
-                        else
-                            c = Color.FromArgb(pixel[0] * 256 + pixel[1], pixel[2] * 256 + pixel[3], pixel[4] * 256 + pixel[5]);
-                    }
-                    else
+                        // If lastpixel is empty, set last pixel to the first pixel
+                        lastpixel = source.GetPixel(x, y);
+                    }else
                     {
-                        // Has alpha channel
-                        if (pixel.Length == 4)
-                            c = Color.FromArgb(pixel[0], pixel[1], pixel[2], pixel[3]);
-                        else
-                            c = Color.FromArgb(pixel[0] * 256 + pixel[1], pixel[2] * 256 + pixel[3], pixel[4] * 256 + pixel[5], pixel[6] * 256 + pixel[7]);
+                        // If lastpixel isn't empty, compare last pixel with new pixel
+                        if (lastpixel == source.GetPixel(x, y))
+                        {
+                            // If pixels match, check if the counter value didn't exceed the maximum value of 256.
+                            if (colorCounter < 256)
+                            {
+                                // If color counter value didn't exceed the maximum value of 256, add one to the counter
+                                colorCounter += 1;
+                            }else
+                            {
+                                // If color counter value did exceed the maximum value of 256, add the bytes to the list and reset the counter.
+                                AddBytes(colorCounter, lastpixel);
+                                colorCounter = 1;
+                            }
+                        }else
+                        {
+                            // If the pixels don't match, add the lastpixel with the counter to the list of bytes, reset the counter and set the lastpixel variable to the new pixel
+                            AddBytes(colorCounter, lastpixel);
+                            colorCounter = 1;
+                            lastpixel = source.GetPixel(x, y);
+                        }
                     }
-
-                    colors[x, y] = c;
                 }
             }
 
-            // Compare per row the pixels next to eachother and compress
-            // Turn all the color values back to byte arrays and save them in a AccessibleBitmap
+            // Return all compressed bytes
+            return bytes.ToArray();
+        }
+
+        public byte[] CompressVertical(AccessibleBitmap source)
+        {
+            // Clear bytes list
+            bytes = new List<byte>();
+            
+            byte[] lastpixel = null;            // Create variable to store the last pixel
+            int colorCounter = 1;               // Create counter for current color
+
+            // Add to byte[] that compression is vertical
+            bytes.Add(1);
+
+            // Iterate through every vertical row
+            for (int x = 0; x < source.width; x++)
+            {
+                // Iterate through every pixel in the vertical row
+                for (int y = 0; y < source.height; y++)
+                {
+                    // Check if the variable lastpixel is empty
+                    if (lastpixel == null)
+                    {
+                        // If lastpixel is empty, set last pixel to the first pixel
+                        lastpixel = source.GetPixel(x, y);
+                    }
+                    else
+                    {
+                        // If lastpixel isn't empty, compare last pixel with new pixel
+                        if (lastpixel == source.GetPixel(x, y))
+                        {
+                            // If pixels match, check if the counter value didn't exceed the maximum value of 256.
+                            if (colorCounter < 256)
+                            {
+                                // If color counter value didn't exceed the maximum value of 256, add one to the counter
+                                colorCounter += 1;
+                            }
+                            else
+                            {
+                                // If color counter value did exceed the maximum value of 256, add the bytes to the list and reset the counter.
+                                AddBytes(colorCounter, lastpixel);
+                                colorCounter = 1;
+                            }
+                        }
+                        else
+                        {
+                            // If the pixels don't match, add the lastpixel with the counter to the list of bytes, reset the counter and set the lastpixel variable to the new pixel
+                            AddBytes(colorCounter, lastpixel);
+                            colorCounter = 1;
+                            lastpixel = source.GetPixel(x, y);
+                        }
+                    }
+                }
+            }
+
+            // Return all compressed bytes
+            return bytes.ToArray();
+        }
+
+        public AccessibleBitmap Decompress(byte[] source, int width, int height, int pixelBytes)
+        {
+            // Create new bitmap to add pixels to
+            AccessibleBitmap bmp = new AccessibleBitmap(width, height, pixelBytes);
+
+            // Check if APIF is vertically or horizontally compressed
+            if (source[0] == 0)
+            {
+                // APIF is horizontally compressed
+            }else
+            {
+                // APIF is vertically compressed
+            }
 
             return null;
         }
 
-        public static AccessibleBitmap Decompress(byte[] source, int width, int height, int pixelBytes)
+        private void AddBytes(int colorCounter, byte[] pixel)
         {
-            //decompress & return aBitmap
-            return null;
+            bytes.Add((byte)(colorCounter - 1));
+            foreach (byte b in pixel)
+            {
+                bytes.Add(b);
+            }
         }
     }
 }
