@@ -165,6 +165,7 @@ namespace APIF
                     // Loop through every pixel on the horizontal row
                     for (int x = 0; x < width; x++)
                     {
+                        // Set pixel value on these coördinates
                         bmp.SetPixel(x, y, queuedPixels.Dequeue());
                     }
                 }
@@ -176,6 +177,7 @@ namespace APIF
                     // Loop through every pixel on the vertical row
                     for (int y = 0; y < height; y++)
                     {
+                        // Set pixel value on these coördinates
                         bmp.SetPixel(x, y, queuedPixels.Dequeue());
                     }
                 }
