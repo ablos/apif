@@ -13,7 +13,7 @@ namespace APIF
         // Create a new list to add bytes and will be returned after
         private List<byte> bytes;
 
-        // This function will compress te bitmap and return a new AccessibleBitmap
+        // This function will compress the bitmap horizontally and return a new AccessibleBitmap
         public byte[] CompressHorizontal(AccessibleBitmap source)
         {
             // Clear byte list
@@ -67,6 +67,7 @@ namespace APIF
             return bytes.ToArray();
         }
 
+        // This function will compress tte bitmap vertically and return a new AccessibleBitmap
         public byte[] CompressVertical(AccessibleBitmap source)
         {
             // Clear bytes list
@@ -123,21 +124,62 @@ namespace APIF
             return bytes.ToArray();
         }
 
+        // This function will decompress the APIF which is compressed using this RLE Compressor
         public AccessibleBitmap Decompress(byte[] source, int width, int height, int pixelBytes)
         {
             // Create new bitmap to add pixels to
             AccessibleBitmap bmp = new AccessibleBitmap(width, height, pixelBytes);
 
+            // Create a queue to store all pixels from the APIF
+            Queue<byte[]> queuedPixels = new Queue<byte[]>();
+
+            // Loop through all pixels from the APIF
+            for (int i = 1; i < ((source.Length - 1) / (1 + pixelBytes)); i += (1 + pixelBytes))
+            {  
+                // Get countervalue of pixel
+                int counterValue = source[i];
+                // Create byte[] to store pixel
+                byte[] pixel = new byte[pixelBytes];
+
+                // Get pixel value and store it
+                for (int y = 0; y < pixelBytes; y++)
+                {
+                    pixel[y] = source[i + y];
+                }
+
+                // Add pixel counterValue amount of times to queue
+                for (int x = 0; x < counterValue; i++)
+                {
+                    queuedPixels.Enqueue(pixel);
+                }
+            }
+
             // Check if APIF is vertically or horizontally compressed
             if (source[0] == 0)
             {
-                // APIF is horizontally compressed
+                // APIF is horizontally compressed, so loop through every horizontal row
+                for (int y = 0; y < height; y++)
+                {
+                    // Loop through every pixel on the horizontal row
+                    for (int x = 0; x < width; x++)
+                    {
+                        bmp.SetPixel(x, y, queuedPixels.Dequeue());
+                    }
+                }
             }else
             {
-                // APIF is vertically compressed
+                // APIF is horizontally vertically, so loop through every vertical row
+                for (int x = 0; x < width; x++)
+                {
+                    // Loop through every pixel on the vertical row
+                    for (int y = 0; y < height; y++)
+                    {
+                        bmp.SetPixel(x, y, queuedPixels.Dequeue());
+                    }
+                }
             }
 
-            return null;
+            return bmp;
         }
 
         private void AddBytes(int colorCounter, byte[] pixel)
