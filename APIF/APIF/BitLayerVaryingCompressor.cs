@@ -16,12 +16,12 @@ namespace APIF
             BitStreamFIFO[] bitStreams = new BitStreamFIFO[aBitmap.pixelBytes * 8];
 
             //Iterate trough all layers of bitdepth
-            for (int z = 0; z < aBitmap.pixelBytes * 8; z++)
+            Parallel.For(0, aBitmap.pixelBytes * 8, (z, state) =>
             {
                 bitStreams[z] = Uncompressed(aBitmap, z);
 
                 BitStreamFIFO[] tmpStreams = new BitStreamFIFO[2];
-                Parallel.For(0, tmpStreams.Length, (i, state) => 
+                Parallel.For(0, tmpStreams.Length, (i, state2) =>
                 {
                     if (i == 0)
                     {
@@ -37,11 +37,11 @@ namespace APIF
                 });
 
                 //Take the smallest one
-                foreach(BitStreamFIFO bitStream in tmpStreams)
+                foreach (BitStreamFIFO bitStream in tmpStreams)
                 {
                     if (bitStream.Length < bitStreams[z].Length) { bitStreams[z] = bitStream; }
                 }
-            }
+            });
 
             //Merge all layers & return byte array
             return BitStreamFIFO.Merge(bitStreams).ToByteArray();
