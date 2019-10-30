@@ -69,7 +69,7 @@ namespace APIF
             return bytes.ToArray();
         }
 
-        // This function will compress tte bitmap vertically and return a new AccessibleBitmap
+        // This function will compress the bitmap vertically and return a new AccessibleBitmap
         public byte[] CompressVertical(AccessibleBitmap source)
         {
             // Clear bytes list
