@@ -10,253 +10,85 @@ namespace APIF
     class BitLayerVaryingCompressor
     {
         //Compress aBitmap into byte array
-        public static byte[] Compress(AccessibleBitmap source)
+        public static byte[] Compress(AccessibleBitmapBytewise source, int byteLayer)
         {
+            //Loop trough all layers of bytes
             AccessibleBitmapBitwise aBitmap = new AccessibleBitmapBitwise(source);
-            BitStreamFIFO[] bitStreams = new BitStreamFIFO[aBitmap.pixelBytes * 8];
-
-            //Iterate trough all layers of bitdepth
-            Parallel.For(0, aBitmap.pixelBytes * 8, (z, state) =>
+            BitStreamFIFO[] byteLayers = new BitStreamFIFO[8];
+            Parallel.For(byteLayer * 8, byteLayer * 8 + 8, (z, state) => //for(int z = byteLayer * 8; z < byteLayer * 8 + 8; z++)
             {
-                bitStreams[z] = Uncompressed(aBitmap, z);
-
-                BitStreamFIFO[] tmpStreams = new BitStreamFIFO[2];
-                Parallel.For(0, tmpStreams.Length, (i, state2) =>
+                //Compress image using all different compression techniques
+                BitStreamFIFO[] compressionTechniques = new BitStreamFIFO[2];
+                Parallel.For(0, compressionTechniques.Length, (i, state2) =>
                 {
-                    if (i == 0)
+                    switch (i)
                     {
-                        //Compress layer using RunLength and replace previous compression if smaller
-                        tmpStreams[i] = RunLengthHorizontal(aBitmap, z);
-                    }
+                        //Uncompressed
+                        case 0:
+                            compressionTechniques[i] = UncompressedBitmapCompressorBitwise.Compress(aBitmap, z);
+                            break;
 
-                    if (i == 1)
-                    {
-                        //Compress layer using RunLength and replace previous compression if smaller
-                        tmpStreams[i] = RunLengthVertical(aBitmap, z);
+                        case 1:
+                            compressionTechniques[i] = RunLengthEncodingCompressorBitwise.Compress(aBitmap, z);
+                            break;
+
+                        //To add a compression technique, add a new case like the existing ones and increase the length of new byte[??][]
                     }
                 });
 
-                //Take the smallest one
-                foreach (BitStreamFIFO bitStream in tmpStreams)
+                //Choose the smallest compression type
+                int smallestID = 0;
+                int smallestSize = int.MaxValue;
+                for (int i = 0; i < compressionTechniques.Length; i++)
                 {
-                    if (bitStream.Length < bitStreams[z].Length) { bitStreams[z] = bitStream; }
+                    if (compressionTechniques[i].Length < smallestSize)
+                    {
+                        smallestSize = compressionTechniques[i].Length;
+                        smallestID = i;
+                    }
                 }
+                BitStreamFIFO tmpStream = new BitStreamFIFO();
+                tmpStream.Write(smallestID, 3);
+
+                byteLayers[z % 8] = BitStreamFIFO.Merge(tmpStream, compressionTechniques[smallestID]);
             });
 
-            //Merge all layers & return byte array
-            return BitStreamFIFO.Merge(bitStreams).ToByteArray();
+            //Combine all byte layers & return
+            return BitStreamFIFO.Merge(byteLayers).ToByteArray();
         }
-
-
-        //Return bit layer uncompressed
-        private static BitStreamFIFO Uncompressed(AccessibleBitmapBitwise aBitmap, int z)
-        {
-            BitStreamFIFO bitStream = new BitStreamFIFO();
-
-            //Write 3-bit int to specify compression type & iterate trough all pixels of aBitmap
-            bitStream.Write(0, 3);
-            for (int y = 0; y < aBitmap.height; y++)
-            {
-                for (int x = 0; x < aBitmap.width; x++)
-                {
-                    //Write bit of current pixel to stream
-                    bitStream.Write(aBitmap.GetPixelBit(x, y, z));
-                }
-            }
-            return bitStream;
-        }
-
-        //Return bit layer compressed using RunLength
-        private static BitStreamFIFO RunLengthHorizontal(AccessibleBitmapBitwise aBitmap, int z)
-        {
-            //Initialize vars
-            BitStreamFIFO bitStream = new BitStreamFIFO();
-            List<int> distances = new List<int>();
-            int tempDistance = -1;
-            bool lastVal = aBitmap.GetPixelBit(0, 0, z);
-
-            //Iterate trough pixels
-            for (int y = 0; y < aBitmap.height; y++)
-            {
-                for (int x = 0; x < aBitmap.width; x++)
-                {
-                    //Take value of pixel & compare with previous value
-                    bool currentBool = aBitmap.GetPixelBit(x, y, z);
-                    if (currentBool == lastVal)
-                    {
-                        //Values are the same, so increase current run
-                        tempDistance++;
-                    }
-                    else
-                    {
-                        //Values are not the same, so save the run and create a new one
-                        distances.Add(tempDistance);
-                        lastVal = currentBool;
-                        tempDistance = 0;
-                    }
-                }
-            }
-            //Save the last run becouse this never happens in the loop
-            distances.Add(tempDistance);
-
-            //Get info about the collection of runs, to make sure that the longest run fits in every int, while trying to keep the ints as short as possible
-            bool initialVal = aBitmap.GetPixelBit(0, 0, z);
-            int bitDepth = (int)Math.Ceiling(Math.Log(distances.Max(), 2));
-
-            //Write necessary info for decompressing to stream
-            bitStream.Write(1, 3);
-            bitStream.Write(initialVal);
-            bitStream.Write((byte)bitDepth);
-
-            //Write all runs to the stream
-            foreach (int i in distances)
-            {
-                bitStream.Write(i, bitDepth);
-            }
-
-            return bitStream;
-        }
-
-        //Return bit layer compressed using RunLength
-        private static BitStreamFIFO RunLengthVertical(AccessibleBitmapBitwise aBitmap, int z)
-        {
-            //Initialize vars
-            BitStreamFIFO bitStream = new BitStreamFIFO();
-            List<int> distances = new List<int>();
-            int tempDistance = -1;
-            bool lastVal = aBitmap.GetPixelBit(0, 0, z);
-
-            //Iterate trough pixels
-            for (int x = 0; x < aBitmap.width; x++)
-            {
-                for (int y = 0; y < aBitmap.height; y++)
-                {
-                    //Take value of pixel & compare with previous value
-                    bool currentBool = aBitmap.GetPixelBit(x, y, z);
-                    if (currentBool == lastVal)
-                    {
-                        //Values are the same, so increase current run
-                        tempDistance++;
-                    }
-                    else
-                    {
-                        //Values are not the same, so save the run and create a new one
-                        distances.Add(tempDistance);
-                        lastVal = currentBool;
-                        tempDistance = 0;
-                    }
-                }
-            }
-            //Save the last run becouse this never happens in the loop
-            distances.Add(tempDistance);
-
-            //Get info about the collection of runs, to make sure that the longest run fits in every int, while trying to keep the ints as short as possible
-            bool initialVal = aBitmap.GetPixelBit(0, 0, z);
-            int bitDepth = (int)Math.Ceiling(Math.Log(distances.Max(), 2));
-
-            //Write necessary info for decompressing to stream
-            bitStream.Write(2, 3);
-            bitStream.Write(initialVal);
-            bitStream.Write((byte)bitDepth);
-
-            //Write all runs to the stream
-            foreach (int i in distances)
-            {
-                bitStream.Write(i, bitDepth);
-            }
-
-            return bitStream;
-        }
-
 
 
         //Decompress byte array into aBitmap with help of width, length and bitdepth
-        public static AccessibleBitmap Decompress(byte[] source, int width, int height, int pixelBytes)
+        public static AccessibleBitmapBytewise Decompress(byte[] inBytes, AccessibleBitmapBytewise inBitmap, out byte[] restBytes, int byteLayer)
         {
-            //Create aBitmap for output & create BitStream from byte array for easy reading of bits
-            AccessibleBitmapBitwise aBitmap = new AccessibleBitmapBitwise(new AccessibleBitmap(width, height, pixelBytes));
-            BitStreamFIFO bitStream = new BitStreamFIFO(source);
+            AccessibleBitmapBitwise outputBitmap = new AccessibleBitmapBitwise(inBitmap);
+            BitStreamFIFO bitStream = new BitStreamFIFO(inBytes);
 
-            //Iterate trough all bit layers
-            for (int z = 0; z < pixelBytes * 8; z++)
+            for (int i = byteLayer * 8; i < byteLayer * 8 + 8; i++)
             {
-                //Read 3-bit int containing the compression type, and decompress using the correct method
-                switch (bitStream.ReadInt(3))
+                int compressionType = bitStream.ReadInt(3);
+                switch (compressionType)
                 {
-                    //Uncompressed
+                    //Uncompressed bitmap
                     case 0:
-                        //Iterate trough all pixels
-                        for (int y = 0; y < height; y++)
-                        {
-                            for (int x = 0; x < width; x++)
-                            {
-                                //Read bit from bitstream & set bit for the current pixel
-                                aBitmap.SetPixelBit(x, y, z, bitStream.ReadBool());
-                            }
-                        }
+                        outputBitmap = UncompressedBitmapCompressorBitwise.Decompress(bitStream, outputBitmap, out bitStream, i);
                         break;
 
-                    //RunLengthHorizontal
+                    //RunLengthEncodingBitwise
                     case 1:
-                        //Read necessary info from BitStream
-                        bool currentVal = bitStream.ReadBool();
-                        int bitDepth = bitStream.ReadByte();
-                        int pixelsToGo = bitStream.ReadInt(bitDepth) + 1;
-
-                        //Iterate trough all pixels
-                        for (int y = 0; y < height; y++)
-                        {
-                            for (int x = 0; x < width; x++)
-                            {
-                                //Set the bit of the current pixel to the value of the current run
-                                aBitmap.SetPixelBit(x, y, z, currentVal);
-
-                                //Decrease the length of the current run & check if the end has bin reached
-                                pixelsToGo--;
-                                if (pixelsToGo == 0 && (x * y != (height - 1) * (width - 1)))
-                                {
-                                    //Read the new run length from the BitStream & reverse the run bit
-                                    pixelsToGo = bitStream.ReadInt(bitDepth) + 1;
-                                    currentVal = !currentVal;
-                                }
-                            }
-                        }
+                        outputBitmap = RunLengthEncodingCompressorBitwise.Decompress(bitStream, outputBitmap, out bitStream, i);
                         break;
 
-                    //RunLengthVertical
-                    case 2:
-                        //Read necessary info from BitStream
-                        currentVal = bitStream.ReadBool();
-                        bitDepth = bitStream.ReadByte();
-                        pixelsToGo = bitStream.ReadInt(bitDepth) + 1;
-
-                        //Iterate trough all pixels
-                        for (int x = 0; x < width; x++)
-                        {
-                            for (int y = 0; y < height; y++)
-                            {
-                                //Set the bit of the current pixel to the value of the current run
-                                aBitmap.SetPixelBit(x, y, z, currentVal);
-
-                                //Decrease the length of the current run & check if the end has bin reached
-                                pixelsToGo--;
-                                if (pixelsToGo == 0 && (y * x != (height - 1) * (width - 1)))
-                                {
-                                    //Read the new run length from the BitStream & reverse the run bit
-                                    pixelsToGo = bitStream.ReadInt(bitDepth) + 1;
-                                    currentVal = !currentVal;
-                                }
-                            }
-                        }
-                        break;
+                    //To add a decompression type add a new case like the existing ones
 
                     //Unknown compression type: error
                     default:
-                        throw new Exception("Decode type with this value does not exist");
+                        throw new Exception("Unexisting compression type");
                 }
             }
-
-            return aBitmap.GetAccessibleBitmap();
+            restBytes = new byte[(int)Math.Floor(bitStream.Length / 8.0)];
+            Array.Copy(inBytes, inBytes.Length - (int)Math.Floor(bitStream.Length / 8.0), restBytes, 0, restBytes.Length);
+            return new AccessibleBitmapBytewise(outputBitmap.GetAccessibleBitmap());
         }
     }
 }

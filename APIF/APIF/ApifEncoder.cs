@@ -296,8 +296,12 @@ namespace APIF
             {
                 AccessibleBitmap aBitmap = new AccessibleBitmap(width, height, pixelBytes);
                 aBitmap.SetRawPixelBytes(byteArray);
-
                 return aBitmap;
+            }
+
+            public byte[] GetRawPixelBytes()
+            {
+                return byteArray;
             }
         }
 
@@ -309,7 +313,7 @@ namespace APIF
             public int width;
             public int pixelBytes;
 
-            public AccessibleBitmapBitwise(AccessibleBitmap aBitmap)
+            public AccessibleBitmapBitwise(AccessibleBitmapBytewise aBitmap)
             {
                 width = aBitmap.width;
                 height = aBitmap.height;
@@ -348,8 +352,8 @@ namespace APIF
         public class BitStreamFIFO
         {
             List<bool> allData;
-            int readIndex;
-            public int Length { get { return allData.Count; } }
+            public int readIndex { get; private set; }
+            public int Length { get { return allData.Count - readIndex; } }
 
             public BitStreamFIFO()
             {
@@ -491,7 +495,7 @@ namespace APIF
             public static BitStreamFIFO Merge(BitStreamFIFO[] bitStreams)
             {
                 int newLength = 0;
-                foreach(BitStreamFIFO bitStream in bitStreams)
+                foreach (BitStreamFIFO bitStream in bitStreams)
                 {
                     newLength += bitStream.Length;
                 }
@@ -500,9 +504,20 @@ namespace APIF
                 int currentIndex = 0;
                 foreach (BitStreamFIFO bitStream in bitStreams)
                 {
-                    Array.Copy(bitStream.ToBoolArray(), 0, mergedBools, currentIndex, bitStream.Length);
+                    Array.Copy(bitStream.ToBoolArray(), bitStream.readIndex, mergedBools, currentIndex, bitStream.Length);
                     currentIndex += bitStream.Length;
                 }
+
+                return new BitStreamFIFO(mergedBools);
+            }
+
+            public static BitStreamFIFO Merge(BitStreamFIFO bitStream1, BitStreamFIFO bitStream2)
+            {
+                int newLength = bitStream1.Length + bitStream2.Length;
+
+                bool[] mergedBools = new bool[newLength];
+                Array.Copy(bitStream1.ToBoolArray(), bitStream1.readIndex, mergedBools, 0, bitStream1.Length);
+                Array.Copy(bitStream2.ToBoolArray(), bitStream2.readIndex, mergedBools, bitStream1.Length, bitStream2.Length);
 
                 return new BitStreamFIFO(mergedBools);
             }
@@ -513,13 +528,9 @@ namespace APIF
         public byte[] Encode(Bitmap bitmap)
         {
             //Start timer for compression time
-            SetStatus("Decompressing");
             encodingStart = DateTime.Now.TimeOfDay;
 
             AccessibleBitmap aBitmap = new AccessibleBitmap(bitmap);
-
-            //Set default compression
-            compressionType = 0;
 
             //Compress image using all different compression techniques
             byte[][] compressionTechniques = new byte[2][];
@@ -534,7 +545,7 @@ namespace APIF
 
                     //
                     case 1:
-                        compressionTechniques[i] = BitLayerVaryingCompressor.Compress(aBitmap);
+                        compressionTechniques[i] = ByteLayerVaryingCompression.Compress(aBitmap);
                         break;
 
                     //To add a compression technique, add a new case like the existing ones and increase the length of new byte[??][]
@@ -573,7 +584,6 @@ namespace APIF
             //Stop timer & return byte array
             encodingStop = DateTime.Now.TimeOfDay;
             compressionRate = (double)fileBytes.Length / (aBitmap.width * aBitmap.height);
-            SetStatus("Finished");
             return fileBytes;
         }
 
@@ -609,14 +619,14 @@ namespace APIF
 
                 //BitLayerVaryingCompression
                 case 1:
-                    outputBitmap = BitLayerVaryingCompressor.Decompress(image, width, height, pixelBytes);
+                    outputBitmap = ByteLayerVaryingCompression.Decompress(image, width, height, pixelBytes);
                     break;
+
+                //To add a decompression type add a new case like the existing ones
 
                 //Unknown compression type: error
                 default:
                     throw new Exception("Unexisting compression type");
-
-                //To add a decompression type add a new case like the existing ones
             }
 
             //Stop timer & return bitmap

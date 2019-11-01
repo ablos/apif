@@ -60,6 +60,9 @@
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="RunLengthEncodingCompressor.cs" />
+    <Compile Include="RunLengthEncodingCompressorBitWise.cs" />
+    <Compile Include="UncompressedBitmapCompressorBitwise.cs" />
+    <Compile Include="UncompressedBitmapCompressorBytewise.cs" />
     <Compile Include="UncompressedBitmapCompressor.cs" />
     <EmbeddedResource Include="Form1.resx">
       <DependentUpon>Form1.cs</DependentUpon>
