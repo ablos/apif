@@ -44,16 +44,44 @@ namespace APIF
 
             //Get info about the collection of runs, to make sure that the longest run fits in every int, while trying to keep the ints as short as possible
             bool initialVal = source.GetPixelBit(0, 0, bitLayer);
-            int bitDepth = (int)Math.Ceiling(Math.Log(distances.Max(), 2));
+            int bitDepth = (int)Math.Ceiling(Math.Log(distances.Max() + 1, 2));
+            bitDepth = bitDepth < 1 ? 1 : bitDepth;
+
+            int nonExisting = 0;
+            int minBits = int.MaxValue;
+            for (int i = 0; i < distances.Count; i++)
+            {
+                if (!distances.Contains(i))
+                {
+                    nonExisting = i;
+                    minBits = (int)Math.Ceiling(Math.Log(i + 1, 2));
+                    minBits = minBits < 1 ? 1 : minBits;
+                    break;
+                }
+            }
 
             //Write necessary info for decompressing to stream
             bitStream.Write(initialVal);
             bitStream.Write((byte)bitDepth);
+            bitStream.Write(minBits < bitDepth);
+            if (minBits < bitDepth)
+            {
+                bitDepth = bitDepth - 1;
+                bitStream.Write(nonExisting, bitDepth);
+            }
 
             //Write all runs to the stream
             foreach (int i in distances)
             {
-                bitStream.Write(i, bitDepth);
+                if(Math.Pow(2, bitDepth) < i)
+                {
+                    bitStream.Write(nonExisting, bitDepth);
+                    bitStream.Write(i, bitDepth + 1);
+                }
+                else
+                {
+                    bitStream.Write(i, bitDepth);
+                }
             }
             return bitStream;
         }
@@ -63,8 +91,12 @@ namespace APIF
         {
             //Read necessary info from BitStream
             bool currentVal = inBits.ReadBool();
-            int bitDepth = inBits.ReadByte();
+            int bitDepth = inBits.ReadByte() - 1;
+            int unExisting = 0;
+            if (inBits.ReadBool()) { unExisting = inBits.ReadInt(bitDepth); }
+
             int pixelsToGo = inBits.ReadInt(bitDepth) + 1;
+            if (pixelsToGo == unExisting + 1) { pixelsToGo = inBits.ReadInt(bitDepth + 1) + 1; }
 
             //Iterate trough all pixels
             for (int y = 0; y < inBitmap.height; y++)
@@ -80,6 +112,7 @@ namespace APIF
                     {
                         //Read the new run length from the BitStream & reverse the run bit
                         pixelsToGo = inBits.ReadInt(bitDepth) + 1;
+                        if (pixelsToGo == unExisting + 1) { pixelsToGo = inBits.ReadInt(bitDepth + 1) + 1; }
                         currentVal = !currentVal;
                     }
                 }

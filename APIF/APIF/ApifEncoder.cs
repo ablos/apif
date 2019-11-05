@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Drawing;
 using System.Drawing.Imaging;
 using System.Linq;
@@ -388,6 +389,7 @@ namespace APIF
 
             public void Write(int number, int bitCount)
             {
+                if (bitCount < 0) { Debugger.Break(); }
                 Write(IntToBoolArray(number, bitCount));
             }
 
