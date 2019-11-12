@@ -49,8 +49,8 @@ namespace APIF
             bitDepth = bitDepth < 1 ? 1 : bitDepth;
 
             List<int> nonExisting = new List<int>();
-            int minBits = 0;
-            for (int i = 0; i < distances.Count; i++)
+            int minBits = bitDepth;
+            for (int i = 0; i < distances.Max(); i++)
             {
                 if (!distances.Contains(i))
                 {
@@ -64,22 +64,56 @@ namespace APIF
                 }
             }
 
+            int[][] distancesByPower = new int[bitDepth][];
+            for (int i = 0; i < distancesByPower.Length; i++)
+            {
+                int minVal = (int)Math.Pow(2, i) - 1;
+                int maxVal = (int)Math.Pow(2, i + 1);
+                distancesByPower[i] = distances.FindAll(x => x < maxVal && x >= minVal).ToArray();
+            }
+
+            int chosenMinBits = bitDepth;
+            int smallestSize = int.MaxValue;
+            for (int i = 0; i <= bitDepth - minBits; i++)
+            {
+                int length = 0;
+
+                int baseBits = bitDepth - i;
+                for (int j = 0; j < baseBits; j++)
+                {
+                    length += distancesByPower[j].Length * baseBits;
+                }
+
+                for (int j = 0; j < i; j++)
+                {
+                    int currentBits = bitDepth - j;
+                    length += distancesByPower[currentBits - 1].Length * (baseBits + currentBits);
+                }
+
+                if (length < smallestSize)
+                {
+                    smallestSize = length;
+                    chosenMinBits = baseBits;
+                }
+            }
+
+
             //Write necessary info for decompressing to stream
             bitStream.Write(initialVal);
-            bitStream.Write((byte)minBits);
-            bitStream.Write((byte)nonExisting.Count);
-            foreach (int i in nonExisting)
+            bitStream.Write((byte)chosenMinBits);
+            bitStream.Write((byte)(bitDepth - chosenMinBits));
+            for (int i = 0; i < bitDepth - chosenMinBits - 1; i++)
             {
-                bitStream.Write(i, minBits);
+                bitStream.Write(nonExisting[i], chosenMinBits);
             }
 
             //Write all runs to the stream
             foreach (int i in distances)
             {
                 int extraBits = 0;
-                while (Math.Pow(2, minBits + extraBits) - 1 < i) { extraBits++; }
-                if (extraBits > 0) { bitStream.Write(nonExisting[extraBits - 1], minBits); }
-                bitStream.Write(i, minBits + extraBits);
+                while (Math.Pow(2, chosenMinBits + extraBits) - 1 < i) { extraBits++; }
+                if (extraBits > 0) { bitStream.Write(nonExisting[extraBits - 1], chosenMinBits); }
+                bitStream.Write(i, chosenMinBits + extraBits);
             }
             return bitStream;
         }
@@ -102,11 +136,6 @@ namespace APIF
             {
                 int extraLength = Array.IndexOf(specialValues, tmpLengthTmp) + 1;
                 tmpLengthTmp = inBits.ReadInt(bitDepth + extraLength);
-                if (bitLayer == 0) { Console.WriteLine(tmpLengthTmp + " " + (bitDepth + extraLength)); }
-            }
-            else
-            {
-                if (bitLayer == 0) { Console.WriteLine(tmpLengthTmp + " " + bitDepth); }
             }
 
             int pixelsToGo = tmpLengthTmp + 1;
