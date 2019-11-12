@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -47,41 +48,38 @@ namespace APIF
             int bitDepth = (int)Math.Ceiling(Math.Log(distances.Max() + 1, 2));
             bitDepth = bitDepth < 1 ? 1 : bitDepth;
 
-            int nonExisting = 0;
-            int minBits = int.MaxValue;
+            List<int> nonExisting = new List<int>();
+            int minBits = 0;
             for (int i = 0; i < distances.Count; i++)
             {
                 if (!distances.Contains(i))
                 {
-                    nonExisting = i;
+                    nonExisting.Add(i);
                     minBits = (int)Math.Ceiling(Math.Log(i + 1, 2));
                     minBits = minBits < 1 ? 1 : minBits;
-                    break;
+                    if (nonExisting.Count >= bitDepth - minBits)
+                    {
+                        break;
+                    }
                 }
             }
 
             //Write necessary info for decompressing to stream
             bitStream.Write(initialVal);
-            bitStream.Write((byte)bitDepth);
-            bitStream.Write(minBits < bitDepth);
-            if (minBits < bitDepth)
+            bitStream.Write((byte)minBits);
+            bitStream.Write((byte)nonExisting.Count);
+            foreach (int i in nonExisting)
             {
-                bitDepth = bitDepth - 1;
-                bitStream.Write(nonExisting, bitDepth);
+                bitStream.Write(i, minBits);
             }
 
             //Write all runs to the stream
             foreach (int i in distances)
             {
-                if(Math.Pow(2, bitDepth) < i)
-                {
-                    bitStream.Write(nonExisting, bitDepth);
-                    bitStream.Write(i, bitDepth + 1);
-                }
-                else
-                {
-                    bitStream.Write(i, bitDepth);
-                }
+                int extraBits = 0;
+                while (Math.Pow(2, minBits + extraBits) - 1 < i) { extraBits++; }
+                if (extraBits > 0) { bitStream.Write(nonExisting[extraBits - 1], minBits); }
+                bitStream.Write(i, minBits + extraBits);
             }
             return bitStream;
         }
@@ -91,12 +89,27 @@ namespace APIF
         {
             //Read necessary info from BitStream
             bool currentVal = inBits.ReadBool();
-            int bitDepth = inBits.ReadByte() - 1;
-            int unExisting = 0;
-            if (inBits.ReadBool()) { unExisting = inBits.ReadInt(bitDepth); }
+            int bitDepth = inBits.ReadByte();
 
-            int pixelsToGo = inBits.ReadInt(bitDepth) + 1;
-            if (pixelsToGo == unExisting + 1) { pixelsToGo = inBits.ReadInt(bitDepth + 1) + 1; }
+            int[] specialValues = new int[inBits.ReadByte()];
+            for (int i = 0; i < specialValues.Length; i++)
+            {
+                specialValues[i] = inBits.ReadInt(bitDepth);
+            }
+
+            int tmpLengthTmp = inBits.ReadInt(bitDepth);
+            if (specialValues.Contains(tmpLengthTmp))
+            {
+                int extraLength = Array.IndexOf(specialValues, tmpLengthTmp) + 1;
+                tmpLengthTmp = inBits.ReadInt(bitDepth + extraLength);
+                if (bitLayer == 0) { Console.WriteLine(tmpLengthTmp + " " + (bitDepth + extraLength)); }
+            }
+            else
+            {
+                if (bitLayer == 0) { Console.WriteLine(tmpLengthTmp + " " + bitDepth); }
+            }
+
+            int pixelsToGo = tmpLengthTmp + 1;
 
             //Iterate trough all pixels
             for (int y = 0; y < inBitmap.height; y++)
@@ -111,8 +124,14 @@ namespace APIF
                     if (pixelsToGo == 0 && (x * y != (inBitmap.height - 1) * (inBitmap.width - 1)))
                     {
                         //Read the new run length from the BitStream & reverse the run bit
-                        pixelsToGo = inBits.ReadInt(bitDepth) + 1;
-                        if (pixelsToGo == unExisting + 1) { pixelsToGo = inBits.ReadInt(bitDepth + 1) + 1; }
+                        int tmpLength = inBits.ReadInt(bitDepth);
+                        if (specialValues.Contains(tmpLength))
+                        {
+                            int extraLength = Array.IndexOf(specialValues, tmpLength) + 1;
+                            tmpLength = inBits.ReadInt(bitDepth + extraLength);
+                        }
+
+                        pixelsToGo = tmpLength + 1;
                         currentVal = !currentVal;
                     }
                 }
