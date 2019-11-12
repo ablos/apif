@@ -47,6 +47,8 @@ namespace APIF
                         smallestID = i;
                     }
                 }
+
+                //Merge the number of the compression type of this layer with corresponding byte array
                 byteLayers[z] = new byte[compressionTechniques[smallestID].Length + 1];
                 byteLayers[z][0] = (byte)smallestID;
                 Array.Copy(compressionTechniques[smallestID], 0, byteLayers[z], 1, compressionTechniques[smallestID].Length);
@@ -71,11 +73,14 @@ namespace APIF
             byte[] outBytes = source;
             for (int i = 0; i < pixelBytes; i++)
             {
+                //Read compression type from byte array & remove that byte from the array
                 inBytes = outBytes;
                 int compressionType = inBytes[0];
                 byte[] tmpArray = new byte[inBytes.Length - 1];
                 Array.Copy(inBytes, 1, tmpArray, 0, tmpArray.Length);
                 inBytes = tmpArray;
+
+                //Decompress using the correct compression type
                 switch (compressionType)
                 {
                     //Uncompressed bitmap

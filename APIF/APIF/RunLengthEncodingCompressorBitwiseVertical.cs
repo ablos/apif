@@ -8,7 +8,7 @@ using static APIF.ApifEncoder;
 
 namespace APIF
 {
-    class RunLengthEncodingCompressorBitwise
+    class RunLengthEncodingCompressorBitwiseVertical
     {
         //Compress aBitmap into byte array
         public static BitStreamFIFO Compress(AccessibleBitmapBitwise source, int bitLayer)
@@ -20,9 +20,9 @@ namespace APIF
             bool lastVal = source.GetPixelBit(0, 0, bitLayer);
 
             //Iterate trough pixels
-            for (int y = 0; y < source.height; y++)
+            for (int x = 0; x < source.width; x++)
             {
-                for (int x = 0; x < source.width; x++)
+                for (int y = 0; y < source.height; y++)
                 {
                     //Take value of pixel & compare with previous value
                     bool currentBool = source.GetPixelBit(x, y, bitLayer);
@@ -43,15 +43,11 @@ namespace APIF
             //Save the last run becouse this never happens in the loop
             distances.Add(tempDistance);
 
-
             //Get info about the collection of runs, to make sure that the longest run fits in every int, while trying to keep the ints as short as possible
-
-            //Get the amount of bits needed to store the longest run
             bool initialVal = source.GetPixelBit(0, 0, bitLayer);
             int bitDepth = (int)Math.Ceiling(Math.Log(distances.Max() + 1, 2));
             bitDepth = bitDepth < 1 ? 1 : bitDepth;
 
-            //Find all numbers which aren't used in the array of runs, so they can be used switch in bit depth & find the corresponding minimal amount of bits which can be used
             List<int> nonExisting = new List<int>();
             int minBits = bitDepth;
             for (int i = 0; i < distances.Max(); i++)
@@ -68,7 +64,6 @@ namespace APIF
                 }
             }
 
-            //Find out for every amount of bits how many runs fit in a number, which can be used to calculate the size of this layer using a given minimum of bits
             int[][] distancesByPower = new int[bitDepth][];
             for (int i = 0; i < distancesByPower.Length; i++)
             {
@@ -77,7 +72,6 @@ namespace APIF
                 distancesByPower[i] = distances.FindAll(x => x < maxVal && x >= minVal).ToArray();
             }
 
-            //Calculate the size of this layer using a every possible minimum of bits & choose the smallest amount
             int chosenMinBits = bitDepth;
             int smallestSize = int.MaxValue;
             for (int i = 0; i <= bitDepth - minBits; i++)
@@ -131,26 +125,25 @@ namespace APIF
             bool currentVal = inBits.ReadBool();
             int bitDepth = inBits.ReadByte();
 
-            //Read all switching numbers
             int[] specialValues = new int[inBits.ReadByte()];
             for (int i = 0; i < specialValues.Length; i++)
             {
                 specialValues[i] = inBits.ReadInt(bitDepth);
             }
 
-            //Read the first run
             int tmpLengthTmp = inBits.ReadInt(bitDepth);
             if (specialValues.Contains(tmpLengthTmp))
             {
                 int extraLength = Array.IndexOf(specialValues, tmpLengthTmp) + 1;
                 tmpLengthTmp = inBits.ReadInt(bitDepth + extraLength);
             }
+
             int pixelsToGo = tmpLengthTmp + 1;
 
             //Iterate trough all pixels
-            for (int y = 0; y < inBitmap.height; y++)
+            for (int x = 0; x < inBitmap.width; x++)
             {
-                for (int x = 0; x < inBitmap.width; x++)
+                for (int y = 0; y < inBitmap.height; y++)
                 {
                     //Set the bit of the current pixel to the value of the current run
                     inBitmap.SetPixelBit(x, y, bitLayer, currentVal);

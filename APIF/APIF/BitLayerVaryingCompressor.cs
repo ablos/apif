@@ -18,7 +18,7 @@ namespace APIF
             Parallel.For(byteLayer * 8, byteLayer * 8 + 8, (z, state) => //for(int z = byteLayer * 8; z < byteLayer * 8 + 8; z++)
             {
                 //Compress image using all different compression techniques
-                BitStreamFIFO[] compressionTechniques = new BitStreamFIFO[2];
+                BitStreamFIFO[] compressionTechniques = new BitStreamFIFO[3];
                 Parallel.For(0, compressionTechniques.Length, (i, state2) =>
                 {
                     switch (i)
@@ -28,9 +28,15 @@ namespace APIF
                             compressionTechniques[i] = UncompressedBitmapCompressorBitwise.Compress(aBitmap, z);
                             break;
 
+                        //RunLengthEncodingBitwise
                         case 1:
                             compressionTechniques[i] = RunLengthEncodingCompressorBitwise.Compress(aBitmap, z);
                             break;
+
+                        //RunLengthEncodingBitwiseVertical => 0,07% avarage better than horizontal only, but doubles compression time
+                        //case 2:
+                        //    compressionTechniques[i] = RunLengthEncodingCompressorBitwiseVertical.Compress(aBitmap, z);
+                        //    break;
 
                         //To add a compression technique, add a new case like the existing ones and increase the length of new byte[??][]
                     }
@@ -41,15 +47,19 @@ namespace APIF
                 int smallestSize = int.MaxValue;
                 for (int i = 0; i < compressionTechniques.Length; i++)
                 {
-                    if (compressionTechniques[i].Length < smallestSize)
+                    if (compressionTechniques[i] != null)
                     {
-                        smallestSize = compressionTechniques[i].Length;
-                        smallestID = i;
+                        if (compressionTechniques[i].Length < smallestSize)
+                        {
+                            smallestSize = compressionTechniques[i].Length;
+                            smallestID = i;
+                        }
                     }
                 }
+
+                //Merge the number of the compression type of this layer with corresponding bitStream
                 BitStreamFIFO tmpStream = new BitStreamFIFO();
                 tmpStream.Write(smallestID, 3);
-
                 byteLayers[z % 8] = BitStreamFIFO.Merge(tmpStream, compressionTechniques[smallestID]);
             });
 
@@ -64,8 +74,10 @@ namespace APIF
             AccessibleBitmapBitwise outputBitmap = new AccessibleBitmapBitwise(inBitmap);
             BitStreamFIFO bitStream = new BitStreamFIFO(inBytes);
 
+            //Loop trough all bit layers of current byte layer
             for (int i = byteLayer * 8; i < byteLayer * 8 + 8; i++)
             {
+                //Read compression type & decompress using that technique
                 int compressionType = bitStream.ReadInt(3);
                 switch (compressionType)
                 {
@@ -77,6 +89,11 @@ namespace APIF
                     //RunLengthEncodingBitwise
                     case 1:
                         outputBitmap = RunLengthEncodingCompressorBitwise.Decompress(bitStream, outputBitmap, out bitStream, i);
+                        break;
+
+                    //RunLengthEncodingBitwiseVertical
+                    case 2:
+                        outputBitmap = RunLengthEncodingCompressorBitwiseVertical.Decompress(bitStream, outputBitmap, out bitStream, i);
                         break;
 
                     //To add a decompression type add a new case like the existing ones
