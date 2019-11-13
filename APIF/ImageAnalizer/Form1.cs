@@ -23,6 +23,10 @@ namespace ImageAnalizer
         string filename = null;
         string openImageFilter = "Image files (*.bmp, *.png, *.jpg, *.jpeg, *.jpe, *.jfif, *.webp)| *.bmp; *.png; *.jpg; *.jpeg; *.jpe; *.jfif; *.webp";
 
+        Bitmap[] bitLayers;
+        int currentLayer;
+        int maxLayer;
+
         private void OpenFile(object sender, EventArgs e)
         {
             OpenFileDialog openFileDialog = new OpenFileDialog();
@@ -36,16 +40,46 @@ namespace ImageAnalizer
                 filename = Path.GetFileNameWithoutExtension(openFileDialog.FileName);
                 AccessibleBitmap image = new AccessibleBitmap(new Bitmap(openFileDialog.FileName));
 
-                TableLayoutPanel table = tableLayoutPanel1;
-                table.RowCount = image.pixelBytes;
-                for (int i = 0; i < table.RowCount; i++)
+                currentLayer = 0;
+                maxLayer = image.pixelBytes * 8 - 1;
+                bitLayers = new Bitmap[image.pixelBytes * 8];
+                for(int i = 0; i < bitLayers.Length; i++)
                 {
-                    table.RowStyles.Add(new RowStyle(SizeType.Percent, 1f / table.RowCount));
-                    //remove table shit, scroll trough layers
-                    //resize form to correcct resolution
+                    AccessibleBitmap tmpBitmap = new AccessibleBitmap(image.width, image.height, 3);
+                    for(int y = 0; y < tmpBitmap.height; y++)
+                    {
+                        for (int x = 0; x < tmpBitmap.width; x++)
+                        {
+                            if (image.GetPixelBit(x, y, i))
+                            {
+                                tmpBitmap.SetPixel(x, y, new byte[] { 255, 255, 255 });
+                            }
+                            else
+                            {
+                                tmpBitmap.SetPixel(x, y, new byte[] { 0, 0, 0 });
+                            }
+                        }
+                    }
+                    bitLayers[i] = tmpBitmap.GetBitmap();
                 }
-
+                pictureBox1.Image = bitLayers[0];
             }
+        }
+
+        private void button3_Click(object sender, EventArgs e)
+        {
+            currentLayer++;
+            if (currentLayer > maxLayer) { currentLayer = 0; }
+            pictureBox1.Image = bitLayers[currentLayer];
+            label1.Text = currentLayer.ToString("00");
+        }
+
+        private void button2_Click(object sender, EventArgs e)
+        {
+            currentLayer--;
+            if (currentLayer < 0) { currentLayer = maxLayer; }
+            pictureBox1.Image = bitLayers[currentLayer];
+            label1.Text = currentLayer.ToString("00");
         }
     }
 
