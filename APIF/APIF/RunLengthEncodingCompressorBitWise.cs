@@ -80,22 +80,26 @@ namespace APIF
             //Calculate the size of this layer using a every possible minimum of bits & choose the smallest amount
             int chosenMinBits = bitDepth;
             int smallestSize = int.MaxValue;
+            //Calculate the size for every possible minimum bits
             for (int i = 0; i <= bitDepth - minBits; i++)
             {
                 int length = 0;
 
+                //Multiply the amount of runs which fit in the minimum amount of bits with the minimum amount of bits
                 int baseBits = bitDepth - i;
                 for (int j = 0; j < baseBits; j++)
                 {
                     length += distancesByPower[j].Length * baseBits;
                 }
 
+                //Multiply the amount of runs which fit in a given amount of bits with that amount of bits
                 for (int j = 0; j < i; j++)
                 {
                     int currentBits = bitDepth - j;
                     length += distancesByPower[currentBits - 1].Length * (baseBits + currentBits);
                 }
 
+                //Save minimum bits if this minimum bits gives a smaller size than the previous smallest
                 if (length < smallestSize)
                 {
                     smallestSize = length;
@@ -166,13 +170,15 @@ namespace APIF
                             int extraLength = Array.IndexOf(specialValues, tmpLength) + 1;
                             tmpLength = inBits.ReadInt(bitDepth + extraLength);
                         }
-
                         pixelsToGo = tmpLength + 1;
+
+                        //Toggle bit value
                         currentVal = !currentVal;
                     }
                 }
             }
 
+            //Return rest of bits & return bitmap
             restBits = inBits;
             return inBitmap;
         }
