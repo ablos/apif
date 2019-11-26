@@ -535,7 +535,7 @@ namespace APIF
             AccessibleBitmap aBitmap = new AccessibleBitmap(bitmap);
 
             //Compress image using all different compression techniques
-            byte[][] compressionTechniques = new byte[2][];
+            byte[][] compressionTechniques = new byte[3][];
             Parallel.For(0, compressionTechniques.Length, (i, state) => 
             {
                 switch (i)
@@ -548,6 +548,10 @@ namespace APIF
                     //
                     case 1:
                         compressionTechniques[i] = ByteLayerVaryingCompression.Compress(aBitmap);
+                        break;
+
+                    case 2:
+                        compressionTechniques[i] = RunLengthEncodingCompressor.CompressHorizontal(aBitmap);
                         break;
 
                     //To add a compression technique, add a new case like the existing ones and increase the length of new byte[??][]
@@ -622,6 +626,10 @@ namespace APIF
                 //BitLayerVaryingCompression
                 case 1:
                     outputBitmap = ByteLayerVaryingCompression.Decompress(image, width, height, pixelBytes);
+                    break;
+
+                case 2:
+                    outputBitmap = RunLengthEncodingCompressor.Decompress(image, width, height, pixelBytes);
                     break;
 
                 //To add a decompression type add a new case like the existing ones
