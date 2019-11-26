@@ -61,6 +61,7 @@ namespace APIF
                 BitStreamFIFO tmpStream = new BitStreamFIFO();
                 tmpStream.Write(smallestID, 3);
                 byteLayers[z % 8] = BitStreamFIFO.Merge(tmpStream, compressionTechniques[smallestID]);
+                //Console.WriteLine(smallestID);
             });
 
             //Combine all byte layers & return

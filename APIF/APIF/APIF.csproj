@@ -64,8 +64,12 @@
     <Compile Include="RunLengthEncodingCompressorBitwiseVertical.cs" />
     <Compile Include="RunLengthEncodingCompressorBitWise.cs" />
     <Compile Include="UncompressedBitmapCompressorBitwise.cs" />
+    <Compile Include="ByteArrayCompressorBytewise.cs" />
     <Compile Include="UncompressedBitmapCompressorBytewise.cs" />
     <Compile Include="UncompressedBitmapCompressor.cs" />
+    <Compile Include="VaryingIntArrayCompressor.cs" />
+    <Compile Include="HuffmanIntArrayCompressor.cs" />
+    <Compile Include="VaryingIntLengthIntArrayCompressor.cs" />
     <EmbeddedResource Include="Form1.resx">
       <DependentUpon>Form1.cs</DependentUpon>
     </EmbeddedResource>

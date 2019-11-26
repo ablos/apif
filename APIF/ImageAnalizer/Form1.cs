@@ -63,6 +63,12 @@ namespace ImageAnalizer
                     bitLayers[i] = tmpBitmap.GetBitmap();
                 }
                 pictureBox1.Image = bitLayers[0];
+
+                byte[] firstbytes = image.GetRawPixelBytes();
+                for(int i = 0; i < firstbytes.Length / 3; i += 3)
+                {
+                    Console.WriteLine(firstbytes[i]);
+                }
             }
         }
 
