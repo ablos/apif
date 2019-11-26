@@ -29,7 +29,8 @@ namespace APIF
                             break;
 
                         case 1:
-                            compressionTechniques[i] = BitLayerVaryingCompressor.Compress(aBitmap, z);
+                            //compressionTechniques[i] = BitLayerVaryingCompressor.Compress(aBitmap, z);
+                            compressionTechniques[i] = ByteArrayCompressorBytewise.Compress(aBitmap, z);
                             break;
 
                         //To add a compression technique, add a new case like the existing ones and increase the length of new byte[??][]
@@ -90,7 +91,8 @@ namespace APIF
 
                     //BitLayerVarying
                     case 1:
-                        outputBitmap = BitLayerVaryingCompressor.Decompress(inBytes, outputBitmap, out outBytes, i);
+                        //outputBitmap = BitLayerVaryingCompressor.Decompress(inBytes, outputBitmap, out outBytes, i);
+                        outputBitmap = ByteArrayCompressorBytewise.Decompress(inBytes, outputBitmap, out outBytes, i);
                         break;
 
                     //To add a decompression type add a new case like the existing ones
