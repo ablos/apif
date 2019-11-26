@@ -1,5 +1,9 @@
 ﻿using System.Collections.Generic;
 using static APIF.ApifEncoder;
+using System.Linq;
+// Delete these:
+using System;
+using System.IO;
 
 namespace APIF
 {
@@ -10,13 +14,13 @@ namespace APIF
      *   will decompress it into a AccessibleBitmap.
      */
 
-    class RunLengthEncodingCompressor
+    static class RunLengthEncodingCompressor
     {
         // Create a new list to add bytes and will be returned after
-        private List<byte> bytes;
+        private static List<byte> bytes;
 
         // This function will compress the bitmap horizontally and return a new AccessibleBitmap
-        public byte[] CompressHorizontal(AccessibleBitmap source)
+        public static byte[] CompressHorizontal(AccessibleBitmap source)
         {
             // Clear byte list
             bytes = new List<byte>();
@@ -41,7 +45,7 @@ namespace APIF
                     }else
                     {
                         // If lastpixel isn't empty, compare last pixel with new pixel
-                        if (lastpixel == source.GetPixel(x, y))
+                        if (lastpixel.SequenceEqual(source.GetPixel(x, y)))
                         {
                             // If pixels match, check if the counter value didn't exceed the maximum value of 256.
                             if (colorCounter < 256)
@@ -65,12 +69,15 @@ namespace APIF
                 }
             }
 
+            // Add the remaining byte(s)
+            AddBytes(colorCounter, lastpixel);
+
             // Return all compressed bytes
             return bytes.ToArray();
         }
 
         // This function will compress the bitmap vertically and return a new AccessibleBitmap
-        public byte[] CompressVertical(AccessibleBitmap source)
+        public static byte[] CompressVertical(AccessibleBitmap source)
         {
             // Clear bytes list
             bytes = new List<byte>();
@@ -96,7 +103,7 @@ namespace APIF
                     else
                     {
                         // If lastpixel isn't empty, compare last pixel with new pixel
-                        if (lastpixel == source.GetPixel(x, y))
+                        if (lastpixel.SequenceEqual(source.GetPixel(x, y)))
                         {
                             // If pixels match, check if the counter value didn't exceed the maximum value of 256.
                             if (colorCounter < 256)
@@ -122,13 +129,26 @@ namespace APIF
                 }
             }
 
+            // Add the remaining byte(s)
+            AddBytes(colorCounter, lastpixel);
+
             // Return all compressed bytes
             return bytes.ToArray();
         }
 
         // This function will decompress the APIF which is compressed using this RLE Compressor and return a AccessibleBitmap
-        public AccessibleBitmap Decompress(byte[] source, int width, int height, int pixelBytes)
+        public static AccessibleBitmap Decompress(byte[] source, int width, int height, int pixelBytes)
         {
+            Console.WriteLine("Source:");
+            foreach (byte b in source)
+            {
+                Console.Write(b.ToString() + " ");
+            }
+            Console.WriteLine();
+            Console.WriteLine("Width: " + width);
+            Console.WriteLine("Height: " + height);
+            Console.WriteLine("Pixelbytes: " + pixelBytes);
+
             // Create new bitmap to add pixels to
             AccessibleBitmap bmp = new AccessibleBitmap(width, height, pixelBytes);
 
@@ -136,21 +156,22 @@ namespace APIF
             Queue<byte[]> queuedPixels = new Queue<byte[]>();
 
             // Loop through all pixels from the APIF
-            for (int i = 1; i < ((source.Length - 1) / (1 + pixelBytes)); i += (1 + pixelBytes))
+            for (int i = 1; i < ((source.Length - 1)); i += (1 + pixelBytes))
             {  
                 // Get countervalue of pixel
                 int counterValue = source[i];
+                Console.WriteLine(counterValue);
                 // Create byte[] to store pixel
                 byte[] pixel = new byte[pixelBytes];
 
                 // Get pixel value and store it
                 for (int y = 0; y < pixelBytes; y++)
                 {
-                    pixel[y] = source[i + y];
+                    pixel[y] = source[i + y + 1];
                 }
 
                 // Add pixel counterValue amount of times to queue
-                for (int x = 0; x < counterValue; i++)
+                for (int x = 0; x < counterValue; x++)
                 {
                     queuedPixels.Enqueue(pixel);
                 }
@@ -171,7 +192,7 @@ namespace APIF
                 }
             }else
             {
-                // APIF is horizontally vertically, so loop through every vertical row
+                // APIF is vertically compressed, so loop through every vertical row
                 for (int x = 0; x < width; x++)
                 {
                     // Loop through every pixel on the vertical row
@@ -188,10 +209,11 @@ namespace APIF
         }
 
         // This function will add the bytes to the byte list.
-        private void AddBytes(int colorCounter, byte[] pixel)
+        private static void AddBytes(int colorCounter, byte[] pixel)
         {
-            // Add color counter value
+            //Console.WriteLine("Pixel length: " + pixel.Length);
             bytes.Add((byte)(colorCounter - 1));
+            
             // Add the pixel value
             bytes.AddRange(pixel);
         }
