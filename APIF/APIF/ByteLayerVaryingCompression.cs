@@ -29,8 +29,8 @@ namespace APIF
                             break;
 
                         case 1:
-                            //compressionTechniques[i] = BitLayerVaryingCompressor.Compress(aBitmap, z);
-                            compressionTechniques[i] = ByteArrayCompressorBytewise.Compress(aBitmap, z);
+                            compressionTechniques[i] = BitLayerVaryingCompressor.Compress(aBitmap, z);
+                            //compressionTechniques[i] = ByteArrayCompressorBytewise.Compress(aBitmap, z);
                             break;
 
                         //To add a compression technique, add a new case like the existing ones and increase the length of new byte[??][]
