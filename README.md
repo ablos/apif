@@ -1,3 +1,3 @@
 # APIF - Abel & Paul Image Format
 
-Free to use lossless image format.
+School project at Melanchthon Bergschenhoek done by Abel Dieterich en Paul Tervoort. It is a lossless image format that combines existing and new techniques.
