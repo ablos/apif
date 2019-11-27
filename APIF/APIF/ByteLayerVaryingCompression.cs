@@ -91,8 +91,8 @@ namespace APIF
 
                     //BitLayerVarying
                     case 1:
-                        outputBitmap = BitLayerVaryingCompressor.Decompress(inBytes, outputBitmap, out outBytes, i);
-                        //outputBitmap = ByteArrayCompressorBytewise.Decompress(inBytes, outputBitmap, out outBytes, i);
+                        //outputBitmap = BitLayerVaryingCompressor.Decompress(inBytes, outputBitmap, out outBytes, i);
+                        outputBitmap = ByteArrayCompressorBytewise.Decompress(inBytes, outputBitmap, out outBytes, i);
                         break;
 
                     //To add a decompression type add a new case like the existing ones
