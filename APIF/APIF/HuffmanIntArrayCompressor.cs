@@ -7,6 +7,67 @@ using static APIF.ApifEncoder;
 
 namespace APIF
 {
+    class TreeWalker
+    {
+        int minBits;
+        public BitStreamFIFO outputStream;
+        int[] sortednumbers;
+        int[][] treeints;
+        public bool[][] numberVals;
+
+        public TreeWalker(int[] sortedNumbers, int[][] treeInts)
+        {
+            sortednumbers = sortedNumbers;
+            treeints = treeInts;
+
+            numberVals = new bool[sortedNumbers.Length][];
+            minBits = (int)Math.Ceiling(Math.Log(sortedNumbers.Max(), 2));
+            minBits = minBits < 1 ? 1 : minBits;
+
+            outputStream = new BitStreamFIFO();
+            outputStream.Write((byte)minBits);
+            outputStream.Write(sortedNumbers.Length, minBits);
+            //Console.WriteLine(minBits + " " + sortedNumbers.Length);
+
+            LoopTree(new bool[0], treeInts.Length - 1);
+            //Console.WriteLine();
+        }
+
+        void LoopTree(bool[] currentTree, int index)
+        {
+            int[] node = treeints[index];
+            if (node[1] == -1)
+            {
+                if(currentTree.Length == 0)
+                {
+                    currentTree = new bool[] { false };
+                }
+
+                //Console.Write("0 " + sortednumbers[node[2]] + " ");
+                outputStream.Write(false);
+                outputStream.Write(sortednumbers[node[2]], minBits);
+
+                numberVals[node[2]] = currentTree.ToArray();
+            }
+            else
+            {
+                //Console.Write("1");
+                outputStream.Write(true);
+
+                bool[] passTree = new bool[currentTree.Length + 1];
+                if (currentTree.Length > 0)
+                {
+                    Array.Copy(currentTree, passTree, currentTree.Length);
+                }
+
+                passTree[passTree.Length - 1] = true;
+                LoopTree(passTree, node[2]);
+                passTree[passTree.Length - 1] = false;
+                LoopTree(passTree, node[1]);
+            }
+        }
+    }
+
     class HuffmanIntArrayCompressor
     {
         public static BitStreamFIFO Compress(int[] source)
@@ -29,7 +90,7 @@ namespace APIF
             List<int> sortedWeightTmp = weights;
             sortedWeightTmp.Sort();
             int[] sortedWeightsInts = sortedWeightTmp.ToArray();
-            sortedNumbers = new int[numbers.Count];
+            int[] sortedNumbers = new int[numbers.Count];
             int[] sortedWeights = new int[weights.Count];
             for (int i = 0; i < sortedWeightTmp.Count; i++)
             {
@@ -61,41 +122,38 @@ namespace APIF
             }
             tree.Add(sources[0]);
 
-            numberVals = new string[numbers.Count];
+            TreeWalker walker = new TreeWalker(sortedNumbers, tree.ToArray());
+            BitStreamFIFO outputStream = walker.outputStream;
+            bool[][] numberVals = walker.numberVals;
 
-            treeInts = tree.ToArray();
-            LoopTree("", treeInts.Length - 1);
-            Console.WriteLine();
-
-            int length = 0;
+            /*int length = 0;
             for (int i = 0; i < numberVals.Length; i++)
             {
-                Console.WriteLine(i + " - " + sortedNumbers[i] + " : " + sortedWeights[i] + " , " + numberVals[i]);
+                Console.WriteLine(i + " - " + sortedNumbers[i] + " : " + sortedWeights[i] + " , " + BoolArrString(numberVals[i]));
                 length += sortedWeights[i] * numberVals[i].Length;
             }
-            //Console.WriteLine(length / 8);
-            return new BitStreamFIFO();
+            Console.WriteLine(source.Length);
+            Console.WriteLine(length / 8);*/
+
+            foreach(int i in source)
+            {
+                int index = Array.IndexOf(sortedNumbers, i);
+                outputStream.Write(numberVals[index]);
+                //Console.WriteLine(BoolArrString(numberVals[index]));
+            }
+            //Console.WriteLine(source.Length * 8);
+            //Console.WriteLine(outputStream.Length);
+            return outputStream;
         }
 
-        static int[] sortedNumbers;
-        static string[] numberVals;
-        static int[][] treeInts;
-        static void LoopTree(string currentTree, int index)
+        static string BoolArrString(bool[] bools)
         {
-            //if(currentTree != "") { Console.Write(currentTree.Last()); }
-            
-            int[] node = treeInts[index];
-            if (node[1] == -1)
+            string s = "";
+            foreach(bool b in bools)
             {
-                //Console.Write("0 " + sortedNumbers[node[2]] + " ");
-                numberVals[node[2]] = currentTree;
+                s += b ? "1" : "0";
             }
-            else
-            {
-                //Console.Write("1");
-                LoopTree(currentTree + "0", node[1]);
-                LoopTree(currentTree + "1", node[2]);
-            }
+            return s;
         }
 
 
@@ -104,7 +162,55 @@ namespace APIF
             //dictionary decompile
             //1: add '0' to end
             //2: read byte; attach current code to byte; remove al '1' from end; replace last '0' with '1'
-            return new int[0];
+            int minBits = source.ReadByte();
+            int dictionaryLength = source.ReadInt(minBits);
+            //Console.WriteLine(minBits + " " + dictionaryLength);
+            List<int> dicNumbers = new List<int>();
+            List<bool[]> dicCodes = new List<bool[]>();
+            List<bool> tmpCode = new List<bool>();
+            while (dicCodes.Count < dictionaryLength)
+            {
+                if (source.ReadBool())
+                {
+                    tmpCode.Add(true);
+                }
+                else
+                {
+                    dicNumbers.Add(source.ReadInt(minBits));
+                    dicCodes.Add(tmpCode.ToArray());
+
+                    if (tmpCode.Contains(true))
+                    {
+                        while (tmpCode.Last() == false)
+                        {
+                            tmpCode.RemoveAt(tmpCode.Count - 1);
+                        }
+                        tmpCode.RemoveAt(tmpCode.Count - 1);
+                        tmpCode.Add(false);
+                    }
+                }
+            }
+
+            /*for(int i = 0; i < dicNumbers.Count; i++)
+            {
+                Console.WriteLine(dicNumbers[i] + " " + BoolArrString(dicCodes[i]));
+            }
+            Console.WriteLine();*/
+
+            List<int> outputList = new List<int>();
+            List<bool> tmpRead = new List<bool>();
+            while(source.Length > 0)
+            {
+                tmpRead.Add(source.ReadBool());
+                int index = dicCodes.FindIndex(tmpRead.ToArray().SequenceEqual);
+                if (index > -1)
+                {
+                    outputList.Add(dicNumbers[index]);
+                    tmpRead = new List<bool>();
+                }
+            }
+
+            return outputList.ToArray();
         }
     }
 }

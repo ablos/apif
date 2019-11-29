@@ -112,7 +112,7 @@ namespace APIF
             bitStream.Write(initialVal);
             bitStream.Write((byte)chosenMinBits);
             bitStream.Write((byte)(bitDepth - chosenMinBits));
-            for (int i = 0; i < bitDepth - chosenMinBits - 1; i++)
+            for (int i = 0; i < bitDepth - chosenMinBits; i++)
             {
                 bitStream.Write(nonExisting[i], chosenMinBits);
             }
