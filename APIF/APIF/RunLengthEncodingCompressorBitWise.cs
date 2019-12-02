@@ -125,62 +125,109 @@ namespace APIF
                 if (extraBits > 0) { bitStream.Write(nonExisting[extraBits - 1], chosenMinBits); }
                 bitStream.Write(i, chosenMinBits + extraBits);
             }
-            return bitStream;
+
+            BitStreamFIFO bitStream2 = BitStreamFIFO.Merge(new BitStreamFIFO(new bool[] { initialVal }), VaryingIntArrayCompressor.Compress(distances.ToArray()));
+
+            if(bitStream.Length < bitStream2.Length)
+            {
+                Console.WriteLine("kanker");
+                return BitStreamFIFO.Merge(new BitStreamFIFO(new bool[] { false }), bitStream);
+            }
+            else
+            {
+                return BitStreamFIFO.Merge(new BitStreamFIFO(new bool[] { true }), bitStream2);
+            }
         }
 
         //Decompress byte array into aBitmap with help of width, length and bitdepth
         public static AccessibleBitmapBitwise Decompress(BitStreamFIFO inBits, AccessibleBitmapBitwise inBitmap, out BitStreamFIFO restBits, int bitLayer)
         {
             //Read necessary info from BitStream
+            bool lengthCompression = inBits.ReadBool();
             bool currentVal = inBits.ReadBool();
-            int bitDepth = inBits.ReadByte();
 
-            //Read all switching numbers
-            int[] specialValues = new int[inBits.ReadByte()];
-            for (int i = 0; i < specialValues.Length; i++)
+            if (!lengthCompression)
             {
-                specialValues[i] = inBits.ReadInt(bitDepth);
-            }
+                int bitDepth = inBits.ReadByte();
 
-            //Read the first run
-            int tmpLengthTmp = inBits.ReadInt(bitDepth);
-            if (specialValues.Contains(tmpLengthTmp))
-            {
-                int extraLength = Array.IndexOf(specialValues, tmpLengthTmp) + 1;
-                tmpLengthTmp = inBits.ReadInt(bitDepth + extraLength);
-            }
-            int pixelsToGo = tmpLengthTmp + 1;
-
-            //Iterate trough all pixels
-            for (int y = 0; y < inBitmap.height; y++)
-            {
-                for (int x = 0; x < inBitmap.width; x++)
+                //Read all switching numbers
+                int[] specialValues = new int[inBits.ReadByte()];
+                for (int i = 0; i < specialValues.Length; i++)
                 {
-                    //Set the bit of the current pixel to the value of the current run
-                    inBitmap.SetPixelBit(x, y, bitLayer, currentVal);
+                    specialValues[i] = inBits.ReadInt(bitDepth);
+                }
 
-                    //Decrease the length of the current run & check if the end has bin reached
-                    pixelsToGo--;
-                    if (pixelsToGo == 0 && (x * y != (inBitmap.height - 1) * (inBitmap.width - 1)))
+                //Read the first run
+                int tmpLengthTmp = inBits.ReadInt(bitDepth);
+                if (specialValues.Contains(tmpLengthTmp))
+                {
+                    int extraLength = Array.IndexOf(specialValues, tmpLengthTmp) + 1;
+                    tmpLengthTmp = inBits.ReadInt(bitDepth + extraLength);
+                }
+                int pixelsToGo = tmpLengthTmp + 1;
+
+                //Iterate trough all pixels
+                for (int y = 0; y < inBitmap.height; y++)
+                {
+                    for (int x = 0; x < inBitmap.width; x++)
                     {
-                        //Read the new run length from the BitStream & reverse the run bit
-                        int tmpLength = inBits.ReadInt(bitDepth);
-                        if (specialValues.Contains(tmpLength))
-                        {
-                            int extraLength = Array.IndexOf(specialValues, tmpLength) + 1;
-                            tmpLength = inBits.ReadInt(bitDepth + extraLength);
-                        }
-                        pixelsToGo = tmpLength + 1;
+                        //Set the bit of the current pixel to the value of the current run
+                        inBitmap.SetPixelBit(x, y, bitLayer, currentVal);
 
-                        //Toggle bit value
-                        currentVal = !currentVal;
+                        //Decrease the length of the current run & check if the end has bin reached
+                        pixelsToGo--;
+                        if (pixelsToGo == 0 && (x * y != (inBitmap.height - 1) * (inBitmap.width - 1)))
+                        {
+                            //Read the new run length from the BitStream & reverse the run bit
+                            int tmpLength = inBits.ReadInt(bitDepth);
+                            if (specialValues.Contains(tmpLength))
+                            {
+                                int extraLength = Array.IndexOf(specialValues, tmpLength) + 1;
+                                tmpLength = inBits.ReadInt(bitDepth + extraLength);
+                            }
+                            pixelsToGo = tmpLength + 1;
+
+                            //Toggle bit value
+                            currentVal = !currentVal;
+                        }
                     }
                 }
-            }
 
-            //Return rest of bits & return bitmap
-            restBits = inBits;
-            return inBitmap;
+                //Return rest of bits & return bitmap
+                restBits = inBits;
+                return inBitmap;
+            }
+            else
+            {
+                Queue<int> runs = new Queue<int>(VaryingIntArrayCompressor.Decompress(ref inBits));
+
+                int pixelsToGo = runs.Dequeue() + 1;
+
+                //Iterate trough all pixels
+                for (int y = 0; y < inBitmap.height; y++)
+                {
+                    for (int x = 0; x < inBitmap.width; x++)
+                    {
+                        //Set the bit of the current pixel to the value of the current run
+                        inBitmap.SetPixelBit(x, y, bitLayer, currentVal);
+
+                        //Decrease the length of the current run & check if the end has bin reached
+                        pixelsToGo--;
+                        if (pixelsToGo == 0 && (x * y != (inBitmap.height - 1) * (inBitmap.width - 1)))
+                        {
+                            //Read the new run length from the BitStream & reverse the run bit
+                            pixelsToGo = runs.Dequeue() + 1;
+
+                            //Toggle bit value
+                            currentVal = !currentVal;
+                        }
+                    }
+                }
+
+                //Return rest of bits & return bitmap
+                restBits = inBits;
+                return inBitmap;
+            }
         }
     }
 }
