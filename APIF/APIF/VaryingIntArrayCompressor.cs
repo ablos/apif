@@ -18,14 +18,14 @@ namespace APIF
                 switch (i)
                 {
                     //VariableIntLength
-                    /*case 0:
+                    case 0:
                         compressionTechniques[i] = HuffmanIntArrayCompressor.Compress(source);
-                        break;*/
+                        break;
 
                     //Huffmann
-                    case 0:
-                        compressionTechniques[i] = VaryingIntLengthIntArrayCompressor.Compress(source);
-                        break;
+                    //case 0:
+                    //    compressionTechniques[i] = VaryingIntLengthIntArrayCompressor.Compress(source);
+                    //    break;
 
                     //To add a compression technique, add a new case like the existing ones and increase the length of new byte[??][]
                 }
@@ -50,8 +50,8 @@ namespace APIF
             int lengthSaveLength = (int)Math.Ceiling(Math.Log(smallestSize, 2) / 8);
             compressionInfo.Write(lengthSaveLength, 2);
             compressionInfo.Write(smallestSize, lengthSaveLength * 8);
-            Console.WriteLine("s" + lengthSaveLength);
-            Console.WriteLine("s" + smallestSize);
+            //Console.WriteLine("s" + lengthSaveLength);
+            //Console.WriteLine("s" + smallestSize);
 
             return BitStreamFIFO.Merge(compressionInfo, compressionTechniques[smallestID]);
         }
@@ -62,21 +62,21 @@ namespace APIF
             int lengthSaveLength = source.ReadInt(2) * 8;
             int arrayDataLength = source.ReadInt(lengthSaveLength);
             BitStreamFIFO arrayData = new BitStreamFIFO(source.ReadBoolArray(arrayDataLength));
-            Console.WriteLine("s" + lengthSaveLength);
-            Console.WriteLine("s" + arrayDataLength);
+            //Console.WriteLine("s" + lengthSaveLength);
+            //Console.WriteLine("s" + arrayDataLength);
 
             int[] intArray = new int[0];
             switch (compressionType)
             {
                 //VariableIntLength
-                /*case 0:
+                case 0:
                     intArray = HuffmanIntArrayCompressor.DeCompress(arrayData);
-                    break;*/
+                    break;
 
                 //Huffmann
-                case 0:
+                /*case 0:
                     intArray = VaryingIntLengthIntArrayCompressor.Decompress(arrayData);
-                    break;
+                    break;*/
 
                 //To add a compression technique, add a new case like the existing ones and increase the length of new byte[??][]
             }

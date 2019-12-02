@@ -102,8 +102,9 @@ namespace APIF
 
             /*for (int i = 0; i < sortedNumbers.Length; i++)
             {
-                Console.WriteLine(sortedNumbers[i] + " - " + sortedWeights[i]);
-            }*/
+                Console.WriteLine(sortedNumbers[i] + "\t" + sortedWeights[i]);
+            }
+            Console.WriteLine();*/
 
             List<int[]> tree = new List<int[]>();
             List<int[]> sources = new List<int[]>();
@@ -122,27 +123,30 @@ namespace APIF
             }
             tree.Add(sources[0]);
 
+            Array.Reverse(sortedNumbers);
             TreeWalker walker = new TreeWalker(sortedNumbers, tree.ToArray());
             BitStreamFIFO outputStream = walker.outputStream;
+            //Console.WriteLine("s" + outputStream.Length);
             bool[][] numberVals = walker.numberVals;
 
             /*int length = 0;
             for (int i = 0; i < numberVals.Length; i++)
             {
-                Console.WriteLine(i + " - " + sortedNumbers[i] + " : " + sortedWeights[i] + " , " + BoolArrString(numberVals[i]));
+                Console.WriteLine(i + "\t" + sortedNumbers[i] + "\t" + sortedWeights[i] + "\t" + BoolArrString(numberVals[i]));
                 length += sortedWeights[i] * numberVals[i].Length;
-            }
-            Console.WriteLine(source.Length);
-            Console.WriteLine(length / 8);*/
+            }*/
+            //Console.WriteLine(source.Length);
+            //Console.WriteLine(length);
 
             foreach(int i in source)
             {
                 int index = Array.IndexOf(sortedNumbers, i);
                 outputStream.Write(numberVals[index]);
-                //Console.WriteLine(BoolArrString(numberVals[index]));
+                //Console.WriteLine(BoolArrString(numberVals[index]) + "\t" + i);
+                //Console.WriteLine(i);
             }
             //Console.WriteLine(source.Length * 8);
-            //Console.WriteLine(outputStream.Length);
+            //Console.WriteLine("length"+outputStream.Length);
             return outputStream;
         }
 
