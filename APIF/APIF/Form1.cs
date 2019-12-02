@@ -97,7 +97,7 @@ namespace APIF
             byte[] file = encoder.Encode(image);
             File.WriteAllBytes(path, file);
 
-            conversionProgressLabel.Text = encoder.GetEncodingTime().TotalMilliseconds.ToString("F1") + "ms";
+            conversionProgressLabel.Text = encoder.GetEncodingTime().TotalMilliseconds.ToString("F1") + " ms";
             compressionLabel.Text = encoder.GetCompressionRate().ToString("F3");
             compressionTypeLabel.Text = encoder.GetCompressionType().ToString();
         }
@@ -110,7 +110,7 @@ namespace APIF
             image = encoder.Decode(File.ReadAllBytes(path));
             imagepreview.Image = image;
 
-            conversionProgressLabel.Text = encoder.GetEncodingTime().TotalMilliseconds.ToString("F1") + "ms";
+            conversionProgressLabel.Text = encoder.GetEncodingTime().TotalMilliseconds.ToString("F1") + " ms";
             compressionLabel.Text = encoder.GetCompressionRate().ToString("F3");
             compressionTypeLabel.Text = encoder.GetCompressionType().ToString();
         }
