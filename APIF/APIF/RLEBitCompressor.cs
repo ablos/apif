@@ -17,10 +17,11 @@ namespace APIF
         // This function will compress the given bitmap into a byte array, the RLE will work horizontally
         public static byte[] CompressHorizontal(AccessibleBitmap source)
         {
-            byte[] lastpixel = null;                                                            // Create variable to store the last pixel
-            int colorCounter = 1;                                                               // Create counter for current color
-            BitStreamFIFO bs = new BitStreamFIFO();                                             // Create new bitstream for all the bits
-            int maxBitCount = (int)Math.Ceiling(Math.Log(source.width * source.height, 2));     // Get the maximum amount of bits needed to get the countervalue of all the pixels
+            byte[] lastpixel = null;                                // Create variable to store the last pixel
+            int colorCounter = 1;                                   // Create counter for current color
+            BitStreamFIFO bs = new BitStreamFIFO();                 // Create new bitstream for all the bits
+            int maxCount = 0;                                       // Create variable to store the max bitcount
+            Queue<PixelArray> output = new Queue<PixelArray>();     // Create queue to store all the pixelvalues in
 
             // Write one bit to the bitstream, so the decompressor knows to decompress horizontally
             bs.Write(false);
@@ -47,9 +48,11 @@ namespace APIF
                         }
                         else
                         {
-                            // If the pixels don't match, add the counter with the last pixel to the bitstream
-                            bs.Write(colorCounter, maxBitCount);
-                            bs.Write(lastpixel);
+                            // If the pixels don't match, add the counter with the last pixel to the output queue
+                            output.Enqueue(new PixelArray(colorCounter, lastpixel));
+                            // Check if the new countervalue is higher then the last one, if so set maxBitCount to that
+                            if (colorCounter > maxCount)
+                                maxCount = colorCounter;
 
                             // Reset the colorCounter and set the last pixel to the new pixel
                             colorCounter = 1;
@@ -59,9 +62,22 @@ namespace APIF
                 }
             }
 
-            // Add the remaining pixel(s) to the bitstream
-            bs.Write(colorCounter, maxBitCount);
-            bs.Write(lastpixel);
+            // Add the remaining pixel(s) to the output queue
+            output.Enqueue(new PixelArray(colorCounter, lastpixel));
+            // Check if the new countervalue is higher then the last one, if so set maxBitCount to that
+            if (colorCounter > maxCount)
+                maxCount = colorCounter;
+
+            // Write the maxCount to the bitstream
+            bs.Write((byte)Math.Ceiling(Math.Log(maxCount, 2)));
+
+            // Add all the pixels from the queue to the bitstream
+            while (output.Count > 0)
+            {
+                PixelArray pixel = output.Dequeue();
+                bs.Write(pixel.Count, (int)Math.Ceiling(Math.Log(maxCount, 2)));
+                bs.Write(pixel.Pixel);
+            }
 
             // Return the bitsream as a byte[]
             return bs.ToByteArray();
@@ -69,10 +85,11 @@ namespace APIF
 
         public static byte[] CompressVertical(AccessibleBitmap source)
         {
-            byte[] lastpixel = null;                                                            // Create variable to store the last pixel
-            int colorCounter = 1;                                                               // Create counter for current color
-            BitStreamFIFO bs = new BitStreamFIFO();                                             // Create new bitstream for all the bits
-            int maxBitCount = (int)Math.Ceiling(Math.Log(source.width * source.height, 2));     // Get the maximum amount of bits needed to get the countervalue of all the pixels
+            byte[] lastpixel = null;                                // Create variable to store the last pixel
+            int colorCounter = 1;                                   // Create counter for current color
+            BitStreamFIFO bs = new BitStreamFIFO();                 // Create new bitstream for all the bits
+            int maxCount = 0;                                       // Create variable to store the max bitcount
+            Queue<PixelArray> output = new Queue<PixelArray>();     // Create list to store all the pixelvalues in
 
             // Write one bit to the bitstream, so the decompressor knows to decompress vertically
             bs.Write(true);
@@ -99,9 +116,11 @@ namespace APIF
                         }
                         else
                         {
-                            // If the pixels don't match, add the counter with the last pixel to the bitstream
-                            bs.Write(colorCounter, maxBitCount);
-                            bs.Write(lastpixel);
+                            // If the pixels don't match, add the counter with the last pixel to the output queue
+                            output.Enqueue(new PixelArray(colorCounter, lastpixel));
+                            // Check if the new countervalue is higher then the last one, if so set maxBitCount to that
+                            if (colorCounter > maxCount)
+                                maxCount = colorCounter;
 
                             // Reset the colorCounter and set the last pixel to the new pixel
                             colorCounter = 1;
@@ -112,8 +131,21 @@ namespace APIF
             }
 
             // Add the remaining pixel(s) to the bitstream
-            bs.Write(colorCounter, maxBitCount);
-            bs.Write(lastpixel);
+            output.Enqueue(new PixelArray(colorCounter, lastpixel));
+            // Check if the new countervalue is higher then the last one, if so set maxBitCount to that
+            if (colorCounter > maxCount)
+                maxCount = colorCounter;
+
+            // Write the maxCount to the bitstream
+            bs.Write((byte)Math.Ceiling(Math.Log(maxCount, 2)));
+
+            // Add all the pixels from the queue to the bitstream
+            while (output.Count > 0)
+            {
+                PixelArray pixel = output.Dequeue();
+                bs.Write(pixel.Count, (int)Math.Ceiling(Math.Log(maxCount, 2)));
+                bs.Write(pixel.Pixel);
+            }
 
             // Return the bitsream as a byte[]
             return bs.ToByteArray();
@@ -122,9 +154,9 @@ namespace APIF
         public static AccessibleBitmap Decompress(byte[] source, int width, int height, int pixelBytes)
         {
             BitStreamFIFO bs = new BitStreamFIFO(source);                               // Convert the image into a bitstream
-            int maxBitCount = (int)Math.Ceiling(Math.Log(width * height, 2));           // Get the maximum amount of bits needed to get the countervalue of all the pixels
-            AccessibleBitmap bmp = new AccessibleBitmap(width, height, pixelBytes);     // Create new bitmap to write all pixels to
             bool verticallyCompressed = bs.ReadBool();                                  // Store if image was vertically compressed or not
+            int maxBitCount = bs.ReadByte();                                            // Get the highest bitcount value
+            AccessibleBitmap bmp = new AccessibleBitmap(width, height, pixelBytes);     // Create new bitmap to write all pixels to
 
             // Ints to keep track of coords
             int x = 0;
@@ -161,6 +193,20 @@ namespace APIF
 
             // Return the bitmap
             return bmp;
+        }
+
+        // Class to store the pixels with countervalues
+        private class PixelArray
+        {
+            public int Count;          // The countervalue
+            public byte[] Pixel;       // The pixel
+
+            // Constructor to set the countervalue and the pixel value
+            public PixelArray(int Count, byte[] Pixel)
+            {
+                this.Count = Count;
+                this.Pixel = Pixel;
+            }
         }
     }
 }
