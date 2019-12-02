@@ -44,8 +44,13 @@ namespace APIF
                 }
                 else
                 {
+                    DateTime before = DateTime.Now;
                     image = new Bitmap(openFileDialog.FileName);
                     imagepreview.Image = image;
+                    DateTime after = DateTime.Now;
+
+                    conversionProgressLabel.Text = ((int)((after - before).TotalMilliseconds)).ToString() + " ms";
+
                     SetStatus("Idle");
                 }
             }
