@@ -21,12 +21,12 @@ namespace APIF
             treeints = treeInts;
 
             numberVals = new bool[sortedNumbers.Length][];
-            minBits = (int)Math.Ceiling(Math.Log(sortedNumbers.Max(), 2));
+            minBits = (int)Math.Ceiling(Math.Log(sortedNumbers.Max() + 1, 2));
             minBits = minBits < 1 ? 1 : minBits;
 
             outputStream = new BitStreamFIFO();
             outputStream.Write((byte)minBits);
-            outputStream.Write(sortedNumbers.Length, minBits);
+            outputStream.Write(sortedNumbers.Length - 1, minBits);
             //Console.WriteLine(minBits + " " + sortedNumbers.Length);
 
             LoopTree(new bool[0], treeInts.Length - 1);
@@ -167,30 +167,30 @@ namespace APIF
             //1: add '0' to end
             //2: read byte; attach current code to byte; remove al '1' from end; replace last '0' with '1'
             int minBits = source.ReadByte();
-            int dictionaryLength = source.ReadInt(minBits);
+            int dictionaryLength = source.ReadInt(minBits) + 1;
             //Console.WriteLine(minBits + " " + dictionaryLength);
+            SortedDictionary<string, int> dictionary = new SortedDictionary<string, int>();
             List<int> dicNumbers = new List<int>();
             List<bool[]> dicCodes = new List<bool[]>();
-            List<bool> tmpCode = new List<bool>();
-            while (dicCodes.Count < dictionaryLength)
+            string tmpCode = "";
+            while (dictionary.Count < dictionaryLength)
             {
                 if (source.ReadBool())
                 {
-                    tmpCode.Add(true);
+                    tmpCode += "1";
                 }
                 else
                 {
-                    dicNumbers.Add(source.ReadInt(minBits));
-                    dicCodes.Add(tmpCode.ToArray());
+                    dictionary.Add(tmpCode, source.ReadInt(minBits));
 
-                    if (tmpCode.Contains(true))
+                    if (tmpCode.Contains('1'))
                     {
-                        while (tmpCode.Last() == false)
+                        while (tmpCode.Last() == '0')
                         {
-                            tmpCode.RemoveAt(tmpCode.Count - 1);
+                            tmpCode = tmpCode.Remove(tmpCode.Length - 1, 1);
                         }
-                        tmpCode.RemoveAt(tmpCode.Count - 1);
-                        tmpCode.Add(false);
+                        tmpCode = tmpCode.Remove(tmpCode.Length - 1, 1);
+                        tmpCode += '0';
                     }
                 }
             }
@@ -202,15 +202,15 @@ namespace APIF
             Console.WriteLine();*/
 
             List<int> outputList = new List<int>();
-            List<bool> tmpRead = new List<bool>();
+            string tmpRead = "";
             while(source.Length > 0)
             {
-                tmpRead.Add(source.ReadBool());
-                int index = dicCodes.FindIndex(tmpRead.ToArray().SequenceEqual);
-                if (index > -1)
+                tmpRead += source.ReadBool()?'1':'0';
+                int foundVal = 0;
+                if (dictionary.TryGetValue(tmpRead, out foundVal))
                 {
-                    outputList.Add(dicNumbers[index]);
-                    tmpRead = new List<bool>();
+                    outputList.Add(foundVal);
+                    tmpRead = "";
                 }
             }
 

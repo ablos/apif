@@ -68,15 +68,15 @@ namespace APIF
 
             //Write necessary info for decompressing to stream
             bitStream.Write((byte)chosenMinBits);
-            Console.WriteLine(chosenMinBits);
+            //Console.WriteLine(chosenMinBits);
             bitStream.Write((byte)(bitDepth - chosenMinBits));
-            Console.WriteLine((bitDepth - chosenMinBits));
+            //Console.WriteLine((bitDepth - chosenMinBits));
             for (int i = 0; i < bitDepth - chosenMinBits; i++)
             {
                 bitStream.Write(nonExisting[i], chosenMinBits);
-                Console.WriteLine(nonExisting[i]);
+                //Console.WriteLine(nonExisting[i]);
             }
-            Console.WriteLine();
+            //Console.WriteLine();
 
             //Write all runs to the stream
             foreach (int i in source)
@@ -94,15 +94,15 @@ namespace APIF
         {
             //Read necessary info from BitStream
             int bitDepth = source.ReadByte();
-            Console.WriteLine(bitDepth);
+            //Console.WriteLine(bitDepth);
             int[] specialValues = new int[source.ReadByte()];
-            Console.WriteLine(specialValues.Length);
+            //Console.WriteLine(specialValues.Length);
             for (int i = 0; i < specialValues.Length; i++)
             {
                 specialValues[i] = source.ReadInt(bitDepth);
-                Console.WriteLine(specialValues[i]);
+                //Console.WriteLine(specialValues[i]);
             }
-            Console.WriteLine();
+            //Console.WriteLine();
 
             List<int> outputList = new List<int>();
             while (source.Length > bitDepth)

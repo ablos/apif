@@ -12,7 +12,7 @@ namespace APIF
         public static BitStreamFIFO Compress(int[] source)
         {
             //Compress image using all different compression techniques
-            BitStreamFIFO[] compressionTechniques = new BitStreamFIFO[1];
+            BitStreamFIFO[] compressionTechniques = new BitStreamFIFO[2];
             Parallel.For(0, compressionTechniques.Length, (i, state) =>
             {
                 switch (i)
@@ -23,9 +23,9 @@ namespace APIF
                         break;
 
                     //Huffmann
-                    //case 0:
-                    //    compressionTechniques[i] = VaryingIntLengthIntArrayCompressor.Compress(source);
-                    //    break;
+                    case 1:
+                        compressionTechniques[i] = VaryingIntLengthIntArrayCompressor.Compress(source);
+                        break;
 
                     //To add a compression technique, add a new case like the existing ones and increase the length of new byte[??][]
                 }
@@ -41,6 +41,12 @@ namespace APIF
                     smallestSize = compressionTechniques[i].Length;
                     smallestID = i;
                 }
+            }
+            if(smallestID == 1)
+            {
+                Console.WriteLine("chose olden varying");
+                Console.WriteLine(compressionTechniques[0].Length);
+                Console.WriteLine(compressionTechniques[1].Length);
             }
 
             //Merge the info about the compression type with the compressed data & return
@@ -74,9 +80,9 @@ namespace APIF
                     break;
 
                 //Huffmann
-                /*case 0:
+                case 1:
                     intArray = VaryingIntLengthIntArrayCompressor.Decompress(arrayData);
-                    break;*/
+                    break;
 
                 //To add a compression technique, add a new case like the existing ones and increase the length of new byte[??][]
             }

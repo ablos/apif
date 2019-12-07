@@ -526,30 +526,34 @@ namespace APIF
         }
 
 
+
+
         //Encodes a C# Bitmap image to a byte array containing this image compressed as APIF image
         public byte[] Encode(Bitmap bitmap)
         {
             //Start timer for compression time
             encodingStart = DateTime.Now.TimeOfDay;
 
+            //Creates a AccessibleBitmap class for the input bitmap: this class makes reading pixels easier and faster
             AccessibleBitmap aBitmap = new AccessibleBitmap(bitmap);
 
-            //Compress image using all different compression techniques
+            //Compress image using all different compression techniques, where possible at the same time
             byte[][] compressionTechniques = new byte[4][];
             Parallel.For(0, compressionTechniques.Length, (i, state) => 
             {
                 switch (i)
                 {
-                    //Uncompressed
+                    //Uncompressed (only used if no compression technique is smaller)
                     case 0:
                         compressionTechniques[i] = UncompressedBitmapCompressor.Compress(aBitmap);
                         break;
 
-                    //
+                    //Split colors in their channels and apply compression over them
                     case 1:
                         compressionTechniques[i] = ByteLayerVaryingCompression.Compress(aBitmap);
                         break;
 
+                    //Run length compression: save the length of a sequence of pixels with the same color instead of saving them seperately
                     case 2:
                         compressionTechniques[i] = RLEBitCompressor.CompressHorizontal(aBitmap);
                         break;
@@ -562,39 +566,48 @@ namespace APIF
                 }
             });
 
+
             //Choose the smallest compression type
+
+            //Initialize
             int smallestID = 0;
             int smallestSize = int.MaxValue;
+            //Loop trough all saved compression techniques
             for(int i = 0; i < compressionTechniques.Length; i++)
             {
+                //If the current technique is smaller than the smallest technique which has been checked
                 if(compressionTechniques[i].Length < smallestSize)
                 {
+                    //Mark this technique as smallest
                     smallestSize = compressionTechniques[i].Length;
                     smallestID = i;
                 }
             }
-            //smallestID = 2; // TESTING RLE ONLY!!!! (this forces the encoder to use RLE)
+
+            //Set the output byte array to the output of the smallest compression technique
             byte[] image = compressionTechniques[smallestID];
             compressionType = smallestID;
 
             //Build the file header containing information for the decoder
             byte[] header = new byte[7];
-            header[0] = (byte)version;
-            header[1] = (byte)aBitmap.pixelBytes;
-            header[2] = (byte)(aBitmap.width >> 8);
-            header[3] = (byte)aBitmap.width;
-            header[4] = (byte)(aBitmap.height >> 8);
-            header[5] = (byte)aBitmap.height;
-            header[6] = (byte)compressionType;
+            header[0] = (byte)version;                  //This byte indicates the version of the compressor, to handle possible changes in the future
+            header[1] = (byte)aBitmap.pixelBytes;       //This byte indicates the amount of color channels in the image
+            header[2] = (byte)(aBitmap.width >> 8);     //These 2 bytes together indicate the width of the image
+            header[3] = (byte)aBitmap.width;            //The reason for using 2 bytes instead of 1, is that 1 byte can store a width of 0-255, while 2 bytes can store 0-65535
+            header[4] = (byte)(aBitmap.height >> 8);    //These 2 bytes together indicate the heigth of the image
+            header[5] = (byte)aBitmap.height;           //The reason for using 2 bytes instead of 1, is that 1 byte can store a width of 0-255, while 2 bytes can store 0-65535
+            header[6] = (byte)compressionType;          //This contains the number of the compression technique used
 
-            //Merge the header with the image data
+            //Merge the header with the image data to form the fimal file data
             byte[] fileBytes = new byte[header.Length + image.Length];
             Array.Copy(header, fileBytes, header.Length);
             Array.Copy(image, 0, fileBytes, header.Length, image.Length);
 
-            //Stop timer & return byte array
+            //Stop timer
             encodingStop = DateTime.Now.TimeOfDay;
             compressionRate = (double)fileBytes.Length / (aBitmap.width * aBitmap.height);
+
+            //Return final file as byte array
             return fileBytes;
         }
 
@@ -610,17 +623,19 @@ namespace APIF
             encodingStart = DateTime.Now.TimeOfDay;
 
             //Read the header info to the correct variables
-            int pixelBytes = bytes[1];
-            int width = bytes[2] * 256 + bytes[3];
-            int height = bytes[4] * 256 + bytes[5];
-            compressionType = bytes[6];
+            int pixelBytes = bytes[1];                  //The amount of color channels
+            int width = bytes[2] * 256 + bytes[3];      //The image width
+            int height = bytes[4] * 256 + bytes[5];     //The image heigth
+            compressionType = bytes[6];                 //The compression type
 
-            //Stores the image data apart from the header
+            //Store the image data apart from the header
             byte[] image = new byte[bytes.Length - 7];
             Array.Copy(bytes, 7, image, 0, image.Length);
 
+            //Initialize
+            AccessibleBitmap outputBitmap = null;   //The final AccessibleBitmap object
+
             //Choose the right decoding type from the header info
-            AccessibleBitmap outputBitmap = null;
             switch (compressionType)
             {
                 //Uncompressed bitmap
@@ -628,11 +643,12 @@ namespace APIF
                     outputBitmap = UncompressedBitmapCompressor.Decompress(image, width, height, pixelBytes);
                     break;
 
-                //BitLayerVaryingCompression
+                //Individual compressed color channels merged together
                 case 1:
                     outputBitmap = ByteLayerVaryingCompression.Decompress(image, width, height, pixelBytes);
                     break;
 
+                //Run length encoding
                 case 2:
                     outputBitmap = RLEBitCompressor.Decompress(image, width, height, pixelBytes);
                     break;
@@ -648,10 +664,14 @@ namespace APIF
                     throw new Exception("Unexisting compression type");
             }
 
-            //Stop timer & return bitmap
+            //Stop timer 
             encodingStop = DateTime.Now.TimeOfDay;
-            compressionRate = (double)bytes.Length / (outputBitmap.width * outputBitmap.height);
             SetStatus("Finished");
+
+            //Calculate compression rate in bytes per pixel
+            compressionRate = (double)bytes.Length / (outputBitmap.width * outputBitmap.height);
+
+            //Return the output image as bitmap format
             return outputBitmap.GetBitmap();
         }
 
