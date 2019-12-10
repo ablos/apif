@@ -50,6 +50,7 @@
     <Compile Include="ApifEncoder.cs" />
     <Compile Include="BitLayerVaryingCompressor.cs" />
     <Compile Include="ByteArrayCompressor.cs" />
+    <Compile Include="ByteArrayCompressorBitwise16Bit.cs" />
     <Compile Include="ByteLayerVaryingCompression.cs" />
     <Compile Include="FileManager.cs" />
     <Compile Include="Form1.cs">
