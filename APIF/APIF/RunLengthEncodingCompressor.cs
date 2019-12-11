@@ -1,221 +1,114 @@
-﻿using System.Collections.Generic;
-using static APIF.ApifEncoder;
+﻿using System;
+using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
-// Delete these:
-using System;
+using System.Text;
+using System.Threading.Tasks;
+using static APIF.ApifEncoder;
 
 namespace APIF
 {
-    /*
-     * !!! WARNING: THIS CLASS IS OBSOLETE AND OLD, PLEASE USE RLEBitCompressor !!!
-     * - Create an instance of this class to compress with Run Length Encoding (RLE).
-     * - To compress, use the CompressHorizontal or CompressVertical function (sizes of these are to be compared later).
-     * - To decompress, just use the Decompress function, this function will determine if the picture was vertically or horizontally compressed and
-     *   will decompress it into a AccessibleBitmap.
-     */
-
-    static class RunLengthEncodingCompressor
+    class RunLengthEncodingCompressor
     {
-        // Create a new list to add bytes and will be returned after
-        private static List<byte> bytes;
-
-        // This function will compress the bitmap horizontally and return a new AccessibleBitmap
-        public static byte[] CompressHorizontal(AccessibleBitmap source)
+        //Compress aBitmap into byte array
+        public static byte[] Compress(AccessibleBitmap source)
         {
-            // Clear byte list
-            bytes = new List<byte>();
+            //Initialize
+            List<int> distances = new List<int>();              //A list containing all the lenghts of same bits
+            List<int> pixels = new List<int>();              //A list containing all the lenghts of same bits
+            int tempDistance = -1;                              //The length of one run of bits with the same value, while it is not saved yet: -1 becouse it will be increased before the first check
+            byte[] lastPixel = source.GetPixel(0, 0);  //The bit value of the last checked pixel, to compare with the current pixel: set value to the value of the first pixel so the first check will succeed
 
-            // Add to byte[] that compression is horizontal
-            bytes.Add(0);
-
-            byte[] lastpixel = null;            // Create variable to store the last pixel
-            int colorCounter = 1;               // Create counter for current color
-
-            // Iterate through every horizontal row
+            //Loop trough all lines of pixels
             for (int y = 0; y < source.height; y++)
             {
-                // Iterate through every pixel in the horizontal row
+                //Loop trough all pixels in this line
                 for (int x = 0; x < source.width; x++)
                 {
-                    // Check if the variable lastpixel is empty
-                    if (lastpixel == null)
+                    //Take value of the current pixel
+                    byte[] currentPixel = source.GetPixel(x, y);
+
+                    //If the value of the bit of this pixel matches the value of the bit of the previous pixel
+                    if (currentPixel.SequenceEqual(lastPixel))
                     {
-                        // If lastpixel is empty, set last pixel to the first pixel
-                        lastpixel = source.GetPixel(x, y);
-                    }else
-                    {
-                        // If lastpixel isn't empty, compare last pixel with new pixel
-                        if (lastpixel.SequenceEqual(source.GetPixel(x, y)))
-                        {
-                            // If pixels match, check if the counter value didn't exceed the maximum value of 256.
-                            if (colorCounter < 256)
-                            {
-                                // If color counter value didn't exceed the maximum value of 256, add one to the counter
-                                colorCounter += 1;
-                            }else
-                            {
-                                // If color counter value did exceed the maximum value of 256, add the bytes to the list and reset the counter.
-                                AddBytes(colorCounter, lastpixel);
-                                colorCounter = 1;
-                            }
-                        }else
-                        {
-                            // If the pixels don't match, add the lastpixel with the counter to the list of bytes, reset the counter and set the lastpixel variable to the new pixel
-                            AddBytes(colorCounter, lastpixel);
-                            colorCounter = 1;
-                            lastpixel = source.GetPixel(x, y);
-                        }
-                    }
-                }
-            }
-
-            // Add the remaining byte(s)
-            AddBytes(colorCounter, lastpixel);
-
-            // Return all compressed bytes
-            return bytes.ToArray();
-        }
-
-        // This function will compress the bitmap vertically and return a new AccessibleBitmap
-        public static byte[] CompressVertical(AccessibleBitmap source)
-        {
-            // Clear bytes list
-            bytes = new List<byte>();
-            
-            byte[] lastpixel = null;            // Create variable to store the last pixel
-            int colorCounter = 1;               // Create counter for current color
-
-            // Add to byte[] that compression is vertical
-            bytes.Add(1);
-
-            // Iterate through every vertical row
-            for (int x = 0; x < source.width; x++)
-            {
-                // Iterate through every pixel in the vertical row
-                for (int y = 0; y < source.height; y++)
-                {
-                    // Check if the variable lastpixel is empty
-                    if (lastpixel == null)
-                    {
-                        // If lastpixel is empty, set last pixel to the first pixel
-                        lastpixel = source.GetPixel(x, y);
+                        //Values are the same, so increase current run
+                        tempDistance++;
                     }
                     else
                     {
-                        // If lastpixel isn't empty, compare last pixel with new pixel
-                        if (lastpixel.SequenceEqual(source.GetPixel(x, y)))
-                        {
-                            // If pixels match, check if the counter value didn't exceed the maximum value of 256.
-                            if (colorCounter < 256)
-                            {
-                                // If color counter value didn't exceed the maximum value of 256, add one to the counter
-                                colorCounter += 1;
-                            }
-                            else
-                            {
-                                // If color counter value did exceed the maximum value of 256, add the bytes to the list and reset the counter.
-                                AddBytes(colorCounter, lastpixel);
-                                colorCounter = 1;
-                            }
-                        }
-                        else
-                        {
-                            // If the pixels don't match, add the lastpixel with the counter to the list of bytes, reset the counter and set the lastpixel variable to the new pixel
-                            AddBytes(colorCounter, lastpixel);
-                            colorCounter = 1;
-                            lastpixel = source.GetPixel(x, y);
-                        }
+                        //Values are not the same, so save the run
+                        distances.Add(tempDistance);
+                        pixels.AddRange(Array.ConvertAll(lastPixel, b => (int)b));
+
+                        //Set the bit value for the next comparison to the bit value of this pixel
+                        lastPixel = currentPixel;
+
+                        //Reset the run length for the new run
+                        tempDistance = 0;
                     }
                 }
             }
+            //Save the last run becouse this never happens in the loop
+            distances.Add(tempDistance);
+            pixels.AddRange(Array.ConvertAll(lastPixel, b => (int)b));
 
-            // Add the remaining byte(s)
-            AddBytes(colorCounter, lastpixel);
+            //Compress the array of run lengths using different techniques
+            BitStreamFIFO pixelStream = VaryingIntArrayCompressor.Compress(pixels.ToArray());
+            BitStreamFIFO lengthStream = VaryingIntArrayCompressor.Compress(distances.ToArray());
 
-            // Return all compressed bytes
-            return bytes.ToArray();
+            //Combine the inititial bit value with the compressed data of the runs, then return the BitStream
+            return BitStreamFIFO.Merge(pixelStream, lengthStream).ToByteArray();
         }
 
-        // This function will decompress the APIF which is compressed using this RLE Compressor and return a AccessibleBitmap
+        //Decompress byte array into aBitmap with help of width, length and bitdepth
         public static AccessibleBitmap Decompress(byte[] source, int width, int height, int pixelBytes)
         {
-            Console.WriteLine("Source:");
-            foreach (byte b in source)
+            BitStreamFIFO bitStream = new BitStreamFIFO(source);
+
+            AccessibleBitmap aBitmap = new AccessibleBitmap(width, height, pixelBytes);
+
+            //Decompress the BitStream to a queue of integers
+            Queue<int> pixels = new Queue<int>(VaryingIntArrayCompressor.Decompress(ref bitStream));
+            Queue<int> runs = new Queue<int>(VaryingIntArrayCompressor.Decompress(ref bitStream));
+
+            //Initialize
+            int pixelsToGo = runs.Dequeue() + 1;    //The amount of pixels that should be written before the next run starts
+
+            byte[] currentPixel = new byte[pixelBytes];
+            for(int i = 0; i < pixelBytes; i++)
             {
-                Console.Write(b.ToString() + " ");
-            }
-            Console.WriteLine();
-            Console.WriteLine("Width: " + width);
-            Console.WriteLine("Height: " + height);
-            Console.WriteLine("Pixelbytes: " + pixelBytes);
-
-            // Create new bitmap to add pixels to
-            AccessibleBitmap bmp = new AccessibleBitmap(width, height, pixelBytes);
-
-            // Create a queue to store all pixels from the APIF
-            Queue<byte[]> queuedPixels = new Queue<byte[]>();
-
-            // Loop through all pixels from the APIF
-            for (int i = 1; i < ((source.Length - 1)); i += (1 + pixelBytes))
-            {  
-                // Get countervalue of pixel
-                int counterValue = source[i];
-                Console.WriteLine(counterValue);
-                // Create byte[] to store pixel
-                byte[] pixel = new byte[pixelBytes];
-
-                // Get pixel value and store it
-                for (int y = 0; y < pixelBytes; y++)
-                {
-                    pixel[y] = source[i + y + 1];
-                }
-
-                // Add pixel counterValue amount of times to queue
-                for (int x = 0; x < counterValue; x++)
-                {
-                    queuedPixels.Enqueue(pixel);
-                }
+                currentPixel[i] = (byte)pixels.Dequeue();
             }
 
-            // Check if APIF is vertically or horizontally compressed
-            if (source[0] == 0)
+            //Loop trough all lines of pixels
+            for (int y = 0; y < height; y++)
             {
-                // APIF is horizontally compressed, so loop through every horizontal row
-                for (int y = 0; y < height; y++)
-                {
-                    // Loop through every pixel on the horizontal row
-                    for (int x = 0; x < width; x++)
-                    {
-                        // Set pixel value on these coördinates
-                        bmp.SetPixel(x, y, queuedPixels.Dequeue());
-                    }
-                }
-            }else
-            {
-                // APIF is vertically compressed, so loop through every vertical row
+                //Loop trough all pixels in this line
                 for (int x = 0; x < width; x++)
                 {
-                    // Loop through every pixel on the vertical row
-                    for (int y = 0; y < height; y++)
+                    //Set the bit of the current pixel to the value of the current run
+                    aBitmap.SetPixel(x, y, currentPixel);
+
+                    //Decrease the length of the current run
+                    pixelsToGo--;
+
+                    //If the end has been reached
+                    if (pixelsToGo == 0 && (x * y != (height - 1) * (width - 1)))
                     {
-                        // Set pixel value on these coördinates
-                        bmp.SetPixel(x, y, queuedPixels.Dequeue());
+                        //Read the new run length from the BitStream
+                        pixelsToGo = runs.Dequeue() + 1;
+
+                        //Toggle bit value, because a bit can just have 2 values, and this run cannot have the same value as the previous run
+                        for (int i = 0; i < pixelBytes; i++)
+                        {
+                            currentPixel[i] = (byte)pixels.Dequeue();
+                        }
                     }
                 }
             }
 
-            // Return the completed AccessibleBitmap
-            return bmp;
-        }
-
-        // This function will add the bytes to the byte list.
-        private static void AddBytes(int colorCounter, byte[] pixel)
-        {
-            //Console.WriteLine("Pixel length: " + pixel.Length);
-            bytes.Add((byte)(colorCounter - 1));
-            
-            // Add the pixel value
-            bytes.AddRange(pixel);
+            //Return the modified AccessibleBitmapBitwise so the rest of the channels can be added to complete it
+            return aBitmap;
         }
     }
 }
