@@ -538,7 +538,7 @@ namespace APIF
             AccessibleBitmap aBitmap = new AccessibleBitmap(bitmap);
 
             //Compress image using all different compression techniques, where possible at the same time
-            byte[][] compressionTechniques = new byte[5][];
+            byte[][] compressionTechniques = new byte[4][];
             Parallel.For(0, compressionTechniques.Length, (i, state) => 
             {
                 switch (i)
@@ -555,13 +555,15 @@ namespace APIF
 
                     //Run length compression: save the length of a sequence of pixels with the same color instead of saving them seperately
                     case 2:
-                        compressionTechniques[i] = RLEBitCompressor.CompressHorizontal(aBitmap);
+                        compressionTechniques[i] = RunLengthEncodingCompressor.Compress(aBitmap);
                         break;
 
+                    //Run length compression vertical: run length compression, but scan the pixels horizontally, becouse with some images this yields better results
                     case 3:
-                        compressionTechniques[i] = RLEBitCompressor.CompressVertical(aBitmap);
+                        compressionTechniques[i] = RunLengthEncodingCompressorVertical.Compress(aBitmap);
                         break;
 
+                    //LZW compression: save sequences of pixels as a single value, without the need of adding a dictionary
                     case 4:
                         compressionTechniques[i] = LZWCompressor.Compress(aBitmap);
                         break;
@@ -654,13 +656,15 @@ namespace APIF
 
                 //Run length encoding
                 case 2:
-                    outputBitmap = RLEBitCompressor.Decompress(image, width, height, pixelBytes);
+                    outputBitmap = RunLengthEncodingCompressor.Decompress(image, width, height, pixelBytes);
                     break;
 
+                //Run length encoding vertical
                 case 3:
-                    outputBitmap = RLEBitCompressor.Decompress(image, width, height, pixelBytes);
+                    outputBitmap = RunLengthEncodingCompressorVertical.Decompress(image, width, height, pixelBytes);
                     break;
 
+                //LZW compression
                 case 4:
                     outputBitmap = LZWCompressor.Decompress(image, width, height, pixelBytes);
                     break;

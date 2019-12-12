@@ -63,7 +63,7 @@
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="RLEBitCompressor.cs" />
-    <Compile Include="RunLengthEncodingCompressorObsolete.cs" />
+    <Compile Include="RunLengthEncodingCompressorVertical.cs" />
     <Compile Include="RunLengthEncodingCompressor.cs" />
     <Compile Include="RunLengthEncodingCompressorBitWise.cs" />
     <Compile Include="ByteArrayCompressorBitwise.cs" />

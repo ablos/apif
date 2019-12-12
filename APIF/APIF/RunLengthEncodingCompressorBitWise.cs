@@ -83,7 +83,7 @@ namespace APIF
                     //Decrease the length of the current run
                     pixelsToGo--;
 
-                    //If the end has been reached
+                    //If the end of the run has been reached
                     if (pixelsToGo == 0 && (x * y != (inBitmap.height - 1) * (inBitmap.width - 1)))
                     {
                         //Read the new run length from the BitStream

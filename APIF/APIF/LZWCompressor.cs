@@ -8,7 +8,7 @@ namespace APIF
     static class LZWCompressor
     {
         // Maximum bitcount for dictionary values
-        public const int maxBitCount = 12;
+        public const int maxBitCount = 13;
 
         // This function is used to compress the image using the LZW algorithm
         public static byte[] Compress(AccessibleBitmap source)
