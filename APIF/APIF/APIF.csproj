@@ -63,6 +63,9 @@
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="RLEBitCompressor.cs" />
+    <Compile Include="RunLengthEncodingCompressorVerticalBitwise.cs" />
+    <Compile Include="RunLengthEncodingCompressorVerticalBytewise.cs" />
+    <Compile Include="RunLengthEncodingCompressorBytewise.cs" />
     <Compile Include="RunLengthEncodingCompressorVertical.cs" />
     <Compile Include="RunLengthEncodingCompressor.cs" />
     <Compile Include="RunLengthEncodingCompressorBitWise.cs" />
