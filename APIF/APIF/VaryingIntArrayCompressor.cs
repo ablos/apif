@@ -58,7 +58,7 @@ namespace APIF
 
             //Write data to the compression info
             compressionInfo.Write(smallestID, 2);                       //The compression technique used
-            compressionInfo.Write(lengthSaveLength, 4);                 //The amount of bits needed to save the total length in bits of the compressed data
+            compressionInfo.Write(lengthSaveLength, 6);                 //The amount of bits needed to save the total length in bits of the compressed data
             compressionInfo.Write(smallestSize, lengthSaveLength * 8);  //The total length in bits of the compressed data
 
             //Merge the info about the compression type with the compressed data & return
@@ -70,7 +70,7 @@ namespace APIF
         {
             //Read necessary info for decompression
             int compressionType = source.ReadInt(2);                //The compression technique used
-            int lengthSaveLength = source.ReadInt(4) * 8;           //The amount of bits needed to save the total length in bits of the compressed data
+            int lengthSaveLength = source.ReadInt(6) * 8;           //The amount of bits needed to save the total length in bits of the compressed data
             int arrayDataLength = source.ReadInt(lengthSaveLength); //The total length in bits of the compressed data
 
             //Create a new BitStream of correct length from the incoming BitStream
