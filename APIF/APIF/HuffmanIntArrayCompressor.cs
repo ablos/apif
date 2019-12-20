@@ -7,6 +7,7 @@ using static APIF.ApifEncoder;
 
 namespace APIF
 {
+    //Class for looping trough all tree items
     class TreeWalker
     {
         int minBits;
