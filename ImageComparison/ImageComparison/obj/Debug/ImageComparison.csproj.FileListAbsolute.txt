@@ -1,0 +1,7 @@
+D:\VS Projects\ImageComparison\ImageComparison\bin\Debug\ImageComparison.exe.config
+D:\VS Projects\ImageComparison\ImageComparison\bin\Debug\ImageComparison.exe
+D:\VS Projects\ImageComparison\ImageComparison\bin\Debug\ImageComparison.pdb
+D:\VS Projects\ImageComparison\ImageComparison\obj\Debug\ImageComparison.csprojAssemblyReference.cache
+D:\VS Projects\ImageComparison\ImageComparison\obj\Debug\ImageComparison.csproj.CoreCompileInputs.cache
+D:\VS Projects\ImageComparison\ImageComparison\obj\Debug\ImageComparison.exe
+D:\VS Projects\ImageComparison\ImageComparison\obj\Debug\ImageComparison.pdb
