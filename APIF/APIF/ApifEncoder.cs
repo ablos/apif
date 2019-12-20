@@ -563,11 +563,6 @@ namespace APIF
                         compressionTechniques[i] = RunLengthEncodingCompressorVertical.Compress(aBitmap);
                         break;
 
-                    //LZW compression: save sequences of pixels as a single value, without the need of adding a dictionary
-                    case 4:
-                        compressionTechniques[i] = LZWCompressor.Compress(aBitmap);
-                        break;
-
                     //To add a compression technique, add a new case like the existing ones and increase the length of new byte[??][]
                 }
             });
@@ -662,11 +657,6 @@ namespace APIF
                 //Run length encoding vertical
                 case 3:
                     outputBitmap = RunLengthEncodingCompressorVertical.Decompress(image, width, height, pixelBytes);
-                    break;
-
-                //LZW compression
-                case 4:
-                    outputBitmap = LZWCompressor.Decompress(image, width, height, pixelBytes);
                     break;
 
                 //To add a decompression type add a new case like the existing ones

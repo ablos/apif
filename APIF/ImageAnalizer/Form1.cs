@@ -41,22 +41,39 @@ namespace ImageAnalizer
                 AccessibleBitmap image = new AccessibleBitmap(new Bitmap(openFileDialog.FileName));
 
                 currentLayer = 0;
-                maxLayer = image.pixelBytes * 8 - 1;
-                bitLayers = new Bitmap[image.pixelBytes * 8];
-                for(int i = 0; i < bitLayers.Length; i++)
+                maxLayer = image.pixelBytes * 9 - 1;
+                bitLayers = new Bitmap[image.pixelBytes * 9];
+
+                byte[] lowBytes = new byte[image.pixelBytes];
+                byte[] highBytes = new byte[image.pixelBytes];
+                for (int i = 0; i < highBytes.Length; i++)
                 {
-                    AccessibleBitmap tmpBitmap = new AccessibleBitmap(image.width, image.height, 3);
+                    highBytes[i] = 255;
+                }
+
+                for (int i = 0; i < bitLayers.Length; i++)
+                {
+                    AccessibleBitmap tmpBitmap = new AccessibleBitmap(image.width, image.height, image.pixelBytes);
                     for(int y = 0; y < tmpBitmap.height; y++)
                     {
                         for (int x = 0; x < tmpBitmap.width; x++)
                         {
-                            if (image.GetPixelBit(x, y, i))
+                            if (i % 9 == 0)
                             {
-                                tmpBitmap.SetPixel(x, y, new byte[] { 255, 255, 255 });
+                                byte[] tmpBytes = new byte[image.pixelBytes];
+                                tmpBytes[i / 9] = image.GetPixel(x, y)[i / 9];
+                                tmpBitmap.SetPixel(x, y, tmpBytes);
                             }
                             else
                             {
-                                tmpBitmap.SetPixel(x, y, new byte[] { 0, 0, 0 });
+                                if (image.GetPixelBit(x, y, i - 1 - i / 9))
+                                {
+                                    tmpBitmap.SetPixel(x, y, highBytes);
+                                }
+                                else
+                                {
+                                    tmpBitmap.SetPixel(x, y, lowBytes);
+                                }
                             }
                         }
                     }
@@ -65,10 +82,6 @@ namespace ImageAnalizer
                 pictureBox1.Image = bitLayers[0];
 
                 byte[] firstbytes = image.GetRawPixelBytes();
-                for(int i = 0; i < firstbytes.Length / 3; i += 3)
-                {
-                    Console.WriteLine(firstbytes[i]);
-                }
             }
         }
 
@@ -86,6 +99,24 @@ namespace ImageAnalizer
             if (currentLayer < 0) { currentLayer = maxLayer; }
             pictureBox1.Image = bitLayers[currentLayer];
             label1.Text = currentLayer.ToString("00");
+        }
+
+        private void Form1_Load(object sender, EventArgs e)
+        {
+
+        }
+
+        private void button4_Click(object sender, EventArgs e)
+        {
+            FolderBrowserDialog dialog = new FolderBrowserDialog();
+            if(dialog.ShowDialog() == DialogResult.OK)
+            {
+                for(int i = 0; i < bitLayers.Length; i++)
+                {
+                    bitLayers[i].Save(dialog.SelectedPath + "\\" + i.ToString() + ".bmp");
+                }
+
+            }
         }
     }
 
