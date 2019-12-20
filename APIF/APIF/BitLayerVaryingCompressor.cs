@@ -18,7 +18,7 @@ namespace APIF
             Parallel.For(byteLayer * 8, byteLayer * 8 + 8, (z, state) => //for(int z = byteLayer * 8; z < byteLayer * 8 + 8; z++)
             {
                 //Compress image using all different compression techniques, where possible at the same time
-                BitStreamFIFO[] compressionTechniques = new BitStreamFIFO[3];
+                BitStreamFIFO[] compressionTechniques = new BitStreamFIFO[4];
                 Parallel.For(0, compressionTechniques.Length, (i, state2) =>
                 {
                     switch (i)
@@ -28,14 +28,19 @@ namespace APIF
                             compressionTechniques[i] = UncompressedBitmapCompressorBitwise.Compress(aBitmap, z);
                             break;
 
-                        //Run length compression: save the length of a sequence of bit values instead of saving them seperately
+                        //Compress bit channel as an integer array using several techniques, using 8-bit integers
                         case 1:
+                            compressionTechniques[i] = ByteArrayCompressorBitwise.Compress(aBitmap, z);
+                            break;
+
+                        //Run length compression: save the length of a sequence of bit values instead of saving them seperately
+                        case 2:
                             compressionTechniques[i] = RunLengthEncodingCompressorBitwise.Compress(aBitmap, z);
                             break;
 
-                        //Compress bit channel as an integer array using several techniques, using 8-bit integers
-                        case 2:
-                            compressionTechniques[i] = ByteArrayCompressorBitwise.Compress(aBitmap, z);
+                        //Run length compression vertical: run length compression, but scan the pixels horizontally, becouse with some images this yields better results
+                        case 3:
+                            compressionTechniques[i] = RunLengthEncodingCompressorVerticalBitwise.Compress(aBitmap, z);
                             break;
 
                         //To add a compression technique, add a new case like the existing ones and increase the length of new byte[??][]
@@ -98,14 +103,19 @@ namespace APIF
                         outputBitmap = UncompressedBitmapCompressorBitwise.Decompress(bitStream, outputBitmap, out bitStream, i);
                         break;
 
-                    //Run length encoding
+                    //Bit channel compressed as 8-bit integers
                     case 1:
+                        outputBitmap = ByteArrayCompressorBitwise.Decompress(bitStream, outputBitmap, out bitStream, i);
+                        break;
+
+                    //Run length encoding
+                    case 2:
                         outputBitmap = RunLengthEncodingCompressorBitwise.Decompress(bitStream, outputBitmap, out bitStream, i);
                         break;
 
-                    //Bit channel compressed as 8-bit integers
-                    case 2:
-                        outputBitmap = ByteArrayCompressorBitwise.Decompress(bitStream, outputBitmap, out bitStream, i);
+                    //Run length encoding vertical
+                    case 3:
+                        outputBitmap = RunLengthEncodingCompressorVerticalBitwise.Decompress(bitStream, outputBitmap, out bitStream, i);
                         break;
 
                     //To add a decompression type add a new case like the existing ones

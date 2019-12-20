@@ -153,7 +153,7 @@ namespace APIF
             List<int> outputList = new List<int>();
 
             //Read data while the input stream contains data
-            while (source.Length > bitDepth)
+            while (source.Length >= bitDepth)
             {
                 //Read an integer using the default amount of bits
                 int tmpLengthTmp = source.ReadInt(bitDepth);

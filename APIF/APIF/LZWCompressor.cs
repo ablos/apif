@@ -7,31 +7,42 @@ namespace APIF
 {
     static class LZWCompressor
     {
-        // The first 255 values, added in Program.cs
-        public static List<string> LZWDictionary = new List<string>();
         // Maximum bitcount for dictionary values
-        public const int maxBitCount = 9;
+        public const int maxBitCount = 13;
 
         // This function is used to compress the image using the LZW algorithm
         public static byte[] Compress(AccessibleBitmap source)
         {
-            List<string> dictionary = LZWDictionary;                            // Clone dictionary of all bytes
+            // Add first 255 standard values to LZWDictionary in LZWCompressor.cs
+            string[] LZWDictionary = new string[256];
+            for (int i = 0; i < 256; i++)
+            {
+                LZWDictionary[i] = ((char)i).ToString();
+            }
+
+            List<string> dictionary = new List<string>(LZWDictionary);                            // Clone dictionary of all bytes
             Queue<byte> bytes = new Queue<byte>(source.GetRawPixelBytes());     // Get all bytes from the source image
             BitStreamFIFO bs = new BitStreamFIFO();                             // Create bitstream for output
             int maxDictSize = (int)Math.Pow(2, maxBitCount);                    // Get maximum dictionary size
-            string encodingString = bytes.Dequeue().ToString();                 // Create string to add encoding to
+            string encodingString = ((char)bytes.Dequeue()).ToString();                 // Create string to add encoding to
 
             while (bytes.Count > 0)
             {
-                int b = bytes.Dequeue();
-
-                if (dictionary.Contains(encodingString + "." + b.ToString()))
+                // Clear dict if full
+                if (dictionary.Count >= maxDictSize)
                 {
-                    encodingString += "." + b.ToString();
+                    dictionary = new List<string>(LZWDictionary);
+                }
+
+                char b = (char)bytes.Dequeue();
+
+                if (dictionary.Contains(encodingString + b))
+                {
+                    encodingString += b;
                 }else
                 {
                     bs.Write(dictionary.FindIndex(x => x.StartsWith(encodingString)), maxBitCount);
-                    dictionary.Add(encodingString + "." + b.ToString());
+                    dictionary.Add(encodingString + b);
                     encodingString = b.ToString();
                 }
             }

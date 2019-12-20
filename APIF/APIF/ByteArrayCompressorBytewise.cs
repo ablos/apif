@@ -57,8 +57,8 @@ namespace APIF
             }
 
             //Remove the bytes used for this channel from the incoming byte array and pass the rest of them to the next channel
-            restBytes = new byte[(int)Math.Ceiling(layerBits.Length / 8.0) - 1];
-            Array.Copy(inBytes, inBytes.Length - (int)Math.Ceiling(layerBits.Length / 8.0) + 1, restBytes, 0, restBytes.Length);
+            restBytes = new byte[layerBits.Length / 8];
+            Array.Copy(inBytes, inBytes.Length - restBytes.Length, restBytes, 0, restBytes.Length);
 
             //Return the modified bitmap so the rest of the channels can be added to complete it
             return inBitmap;

@@ -18,7 +18,7 @@ namespace APIF
             Parallel.For(0, source.pixelBytes, (z, state) => //for(int z = 0; z < source.pixelBytes; z++)
             {
                 //Compress image using all different compression techniques, where possible at the same time
-                byte[][] compressionTechniques = new byte[3][];
+                byte[][] compressionTechniques = new byte[5][];
                 Parallel.For(0, compressionTechniques.Length, (i, state2) =>
                 {
                     switch (i)
@@ -36,6 +36,16 @@ namespace APIF
                         //Compress color channel as an integer array using several techniques
                         case 2:
                             compressionTechniques[i] = ByteArrayCompressorBytewise.Compress(aBitmap, z);
+                            break;
+
+                        //Run length compression: save the length of a sequence of pixels with the same color instead of saving them seperately
+                        case 3:
+                            compressionTechniques[i] = RunLengthEncodingCompressorBytewise.Compress(aBitmap, z);
+                            break;
+
+                        //Run length compression vertical: run length compression, but scan the pixels horizontally, becouse with some images this yields better results
+                        case 4:
+                            compressionTechniques[i] = RunLengthEncodingCompressorVerticalBytewise.Compress(aBitmap, z);
                             break;
 
                         //To add a compression technique, add a new case like the existing ones and increase the length of new byte[??][]
@@ -114,6 +124,16 @@ namespace APIF
                     //Color channel compressed as integers
                     case 2:
                         outputBitmap = ByteArrayCompressorBytewise.Decompress(inBytes, outputBitmap, out outBytes, i);
+                        break;
+
+                    //Run length compression
+                    case 3:
+                        outputBitmap = RunLengthEncodingCompressorBytewise.Decompress(inBytes, outputBitmap, out outBytes, i);
+                        break;
+
+                    //Run length encoding vertical
+                    case 4:
+                        outputBitmap = RunLengthEncodingCompressorVerticalBytewise.Decompress(inBytes, outputBitmap, out outBytes, i);
                         break;
 
                     //To add a decompression type add a new case like the existing ones

@@ -8,7 +8,7 @@ using static APIF.ApifEncoder;
 
 namespace APIF
 {
-    class RunLengthEncodingCompressorBitwise
+    class RunLengthEncodingCompressorVerticalBitwise
     {
         //Compress aBitmap into byte array
         public static BitStreamFIFO Compress(AccessibleBitmapBitwise source, int bitLayer)
@@ -18,11 +18,11 @@ namespace APIF
             int tempDistance = -1;                              //The length of one run of bits with the same value, while it is not saved yet: -1 becouse it will be increased before the first check
             bool lastVal = source.GetPixelBit(0, 0, bitLayer);  //The bit value of the last checked pixel, to compare with the current pixel: set value to the value of the first pixel so the first check will succeed
 
-            //Loop trough all lines of pixels
-            for (int y = 0; y < source.height; y++)
+            //Loop trough all rows of pixels
+            for (int x = 0; x < source.width; x++)
             {
-                //Loop trough all pixels in this line
-                for (int x = 0; x < source.width; x++)
+                //Loop trough all pixels in this row
+                for (int y = 0; y < source.height; y++)
                 {
                     //Take value of the current pixel
                     bool currentBool = source.GetPixelBit(x, y, bitLayer);
@@ -71,11 +71,11 @@ namespace APIF
             //Initialize
             int pixelsToGo = runs.Dequeue() + 1;    //The amount of pixels that should be written before the next run starts
 
-            //Loop trough all lines of pixels
-            for (int y = 0; y < inBitmap.height; y++)
+            //Loop trough all rows of pixels
+            for (int x = 0; x < inBitmap.width; x++)
             {
-                //Loop trough all pixels in this line
-                for (int x = 0; x < inBitmap.width; x++)
+                //Loop trough all pixels in this row
+                for (int y = 0; y < inBitmap.height; y++)
                 {
                     //Set the bit of the current pixel to the value of the current run
                     inBitmap.SetPixelBit(x, y, bitLayer, currentVal);
