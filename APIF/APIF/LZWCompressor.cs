@@ -10,7 +10,7 @@ namespace APIF
         // The first 255 values, added in Program.cs
         public static List<string> LZWDictionary = new List<string>();
         // Maximum bitcount for dictionary values
-        public const int maxBitCount = 12;
+        public const int maxBitCount = 9;
 
         // This function is used to compress the image using the LZW algorithm
         public static byte[] Compress(AccessibleBitmap source)
