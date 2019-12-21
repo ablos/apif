@@ -14,10 +14,10 @@ namespace APIF
         public static byte[] Compress(AccessibleBitmapBytewise source, int byteLayer)
         {
             //Initialize
-            List<int> distances = new List<int>();      //A list containing all the lenghts of same pixels
-            List<int> pixels = new List<int>();         //A list containing all the pixels that correspond to the lengths in 'distances' list
-            int tempDistance = -1;                      //The length of one run of bits with the same value, while it is not saved yet: -1 becouse it will be increased before the first check
-            byte lastPixel = source.GetPixelByte(0, 0, byteLayer);   //The pixel of the last checked pixel, to compare with the current pixel: set value to the value of the first pixel so the first check will succeed
+            List<int> distances = new List<int>();                      //A list containing all the lenghts of same pixels
+            List<int> pixels = new List<int>();                         //A list containing all the pixels that correspond to the lengths in 'distances' list
+            int tempDistance = -1;                                      //The length of one run of bits with the same value, while it is not saved yet: -1 becouse it will be increased before the first check
+            byte lastPixel = source.GetPixelByte(0, 0, byteLayer);      //The pixel of the last checked pixel, to compare with the current pixel: set value to the value of the first pixel so the first check will succeed
 
             //Loop trough all rows of pixels
             for (int x = 0; x < source.width; x++)

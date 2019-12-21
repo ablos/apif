@@ -16,7 +16,7 @@ namespace APIF
             //Initialize
             List<int> distances = new List<int>();      //A list containing all the lenghts of same pixels
             List<int> pixels = new List<int>();         //A list containing all the pixels that correspond to the lengths in 'distances' list
-            int tempDistance = -1;                      //The length of one run of bits with the same value, while it is not saved yet: -1 becouse it will be increased before the first check
+            int tempDistance = -1;                      //The length of one run of bits with the same value, while it is not saved yet: -1 because it will be increased before the first check
             byte[] lastPixel = source.GetPixel(0, 0);   //The pixel of the last checked pixel, to compare with the current pixel: set value to the value of the first pixel so the first check will succeed
 
             //Loop trough all lines of pixels
